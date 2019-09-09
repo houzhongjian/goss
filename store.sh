@@ -1,2 +1,2 @@
 go build -o store.bin
-./store.bin -runmode=dev -port=9999 -node=store
+./store.bin -runmode=dev  -node=store

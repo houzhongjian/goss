@@ -5,7 +5,7 @@ import (
 
 	"pandaschool.net/goss/src/cmd"
 	"pandaschool.net/goss/src/conf"
-	"pandaschool.net/goss/src/handler"
+	"pandaschool.net/goss/src/node"
 )
 
 func main() {
@@ -21,13 +21,13 @@ func main() {
 	if cmd.MasterNode {
 		log.Println("当前节点为:主节点")
 		//获取存储节点.
-		g := handler.NewMaster()
+		g := node.NewMaster()
 		g.Start()
 		return
 	}
 
 	//创建存储节点.
-	s := handler.NewStore()
+	s := node.NewStore()
 	s.Start()
 
 	// //以下为存储节点的逻辑.
