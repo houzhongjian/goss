@@ -65,5 +65,6 @@ func conndb(cf DbConfig) error {
 func autoMigrate(db *gorm.DB) {
 	db.AutoMigrate(
 		&Oss{},
+		&Metadata{},
 	)
 }

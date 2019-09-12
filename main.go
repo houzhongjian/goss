@@ -29,23 +29,4 @@ func main() {
 	//创建存储节点.
 	s := node.NewStore()
 	s.Start()
-
-	// //以下为存储节点的逻辑.
-	// if err := goini.Load(cmd.Conf); err != nil {
-	// 	log.Fatal(err)
-	// 	return
-	// }
-
-	// if err := store.Init(); err != nil {
-	// 	log.Printf("%+v\n", err)
-	// 	return
-	// }
-
-	// if err := db.Init(); err != nil {
-	// 	log.Printf("%+v\n", err)
-	// 	return
-	// }
-
-	// http.HandleFunc("/oss/", service.Handler)
-	// log.Fatal(http.ListenAndServe(":9999", nil))
 }
