@@ -1,2 +1,4 @@
-go build -o master.bin
-./master.bin -runmode=dev  -node=master
+cd ./app/master/
+go build -o ../../bin/master.bin
+cd ../store/
+go build -o ../../bin/store.bin

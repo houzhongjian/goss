@@ -1,5 +1,2 @@
-./goss
-test/*
-conf/master.ini
-conf/store1.ini
-conf/store2.ini
+./bin/master.bin
+./bin/store.bin
