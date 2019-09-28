@@ -1,3 +1,2 @@
 bin/*
-conf/master.ini
-conf/store.ini
+conf/*.ini
