@@ -1,4 +1,4 @@
-package goini
+package ini
 
 import (
 	"bufio"
@@ -44,7 +44,6 @@ func Load(name string) error {
 		if err != nil {
 			return err
 		}
-		log.Println(key, ":", value)
 		conf[key] = value
 	}
 	config = conf
