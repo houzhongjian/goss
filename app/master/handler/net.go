@@ -9,12 +9,14 @@ import (
 )
 
 type TcpService struct {
-	conn net.Conn
+	conn map[string]net.Conn
 }
 
 //NewTcpService .
 func NewTcpService() *TcpService {
-	return &TcpService{}
+	return &TcpService{
+		conn: make(map[string]net.Conn),
+	}
 }
 
 //Start .
@@ -36,7 +38,7 @@ func (this *TcpService) connStoreNode(addr string) {
 			continue
 		}
 
-		this.conn = conn
+		this.conn[addr] = conn
 		return
 	}
 
@@ -51,9 +53,15 @@ func (this *TcpService) connection(addr string) (conn net.Conn, err error) {
 	return conn, nil
 }
 
+//SelectNode 选择一个存储节点.
+func (this *TcpService) SelectNode() net.Conn {
+	addr := conf.Conf.Node.StoreAddrs[0]
+	return this.conn[addr]
+}
+
 //Write tcp 发送消息.
 func (this *TcpService) Write(b []byte) (msg []byte, err error) {
-	_, err = this.conn.Write(b)
+	_, err = this.SelectNode().Write(b)
 	if err != nil {
 		log.Printf("%+v\n", err)
 		return msg, err
@@ -61,7 +69,7 @@ func (this *TcpService) Write(b []byte) (msg []byte, err error) {
 
 	for {
 		var buf = make([]byte, 1024)
-		_, err = this.conn.Read(buf)
+		_, err = this.SelectNode().Read(buf)
 		if err != nil {
 			log.Printf("%+v\n", err)
 			return msg, err
