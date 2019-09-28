@@ -5,7 +5,7 @@ import (
 	"log"
 	"net"
 
-	"goss.io/goss/app/store/src/conf"
+	"goss.io/goss/app/store/conf"
 )
 
 type StoreService struct {

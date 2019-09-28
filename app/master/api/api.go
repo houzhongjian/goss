@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	"goss.io/goss/app/master/src/conf"
-	"goss.io/goss/app/master/src/handler"
+	"goss.io/goss/app/master/conf"
+	"goss.io/goss/app/master/handler"
 )
 
 //ApiService.

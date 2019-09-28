@@ -5,7 +5,7 @@ import (
 	"net"
 	"time"
 
-	"goss.io/goss/app/master/src/conf"
+	"goss.io/goss/app/master/conf"
 )
 
 type TcpService struct {

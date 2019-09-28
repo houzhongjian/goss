@@ -3,8 +3,8 @@ package node
 import (
 	"fmt"
 
-	"goss.io/goss/app/master/src/api"
-	"goss.io/goss/app/master/src/conf"
+	"goss.io/goss/app/master/api"
+	"goss.io/goss/app/master/conf"
 )
 
 //Gateway 网关.

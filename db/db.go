@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/houzhongjian/goini"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
+	"goss.io/goss/lib/ini"
 )
 
 //Db .
@@ -25,12 +25,12 @@ type DbConfig struct {
 //Init .
 func Init() error {
 	cf := DbConfig{
-		Host:     goini.GetString("db_host"),
-		User:     goini.GetString("db_user"),
-		Password: goini.GetString("db_pwd"),
-		Name:     goini.GetString("db_name"),
-		Port:     goini.GetInt("db_port"),
-		Charset:  goini.GetString("db_charset"),
+		Host:     ini.GetString("db_host"),
+		User:     ini.GetString("db_user"),
+		Password: ini.GetString("db_pwd"),
+		Name:     ini.GetString("db_name"),
+		Port:     ini.GetInt("db_port"),
+		Charset:  ini.GetString("db_charset"),
 	}
 
 	return conndb(cf)

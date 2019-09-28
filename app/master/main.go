@@ -3,9 +3,9 @@ package main
 import (
 	"log"
 
-	"goss.io/goss/app/master/src/cmd"
-	"goss.io/goss/app/master/src/conf"
-	"goss.io/goss/app/master/src/node"
+	"goss.io/goss/app/master/cmd"
+	"goss.io/goss/app/master/conf"
+	"goss.io/goss/app/master/node"
 )
 
 func main() {
