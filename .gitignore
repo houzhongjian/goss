@@ -1,2 +1,3 @@
-./bin/master.bin
-./bin/store.bin
+bin/*
+conf/master.ini
+conf/store.ini
