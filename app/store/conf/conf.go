@@ -22,9 +22,10 @@ type dbConfig struct {
 }
 
 type nodeConfig struct {
-	IP   string
-	Port int
-	Name string
+	IP        string
+	Port      int
+	Name      string
+	StoreRoot string
 }
 
 var Conf *Config
@@ -70,10 +71,17 @@ func parseNodeConfig(cmd *cmd.Command) *nodeConfig {
 		os.Exit(0)
 	}
 
+	storeRoot := ini.GetString("store_root")
+	if len(storeRoot) < 1 {
+		log.Println("store_root 不能为空")
+		os.Exit(0)
+	}
+
 	nodeconf := &nodeConfig{
-		IP:   storeip,
-		Port: storeport,
-		Name: name,
+		IP:        storeip,
+		Port:      storeport,
+		Name:      name,
+		StoreRoot: storeRoot,
 	}
 
 	return nodeconf

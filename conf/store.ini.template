@@ -1,10 +1,9 @@
 #数据库配置
 db_host = 127.0.0.1
-db_user = root
+db_user = postgres
 db_name = goss
 db_pwd = 123
-db_port = 3306
-db_charset = utf8
+db_port = 5432
 
 #存储配置
 store_root=/disk/store1/

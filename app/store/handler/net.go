@@ -2,10 +2,15 @@ package handler
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
 
+	"goss.io/goss/lib"
+
 	"goss.io/goss/app/store/conf"
+	"goss.io/goss/lib/"
+	"goss.io/goss/lib/packet"
 )
 
 type StoreService struct {
@@ -46,16 +51,31 @@ func (this *StoreService) listen() {
 func (this *StoreService) handler(conn net.Conn) {
 	defer conn.Close()
 	for {
-		var buf = make([]byte, 1024)
-		_, err := conn.Read(buf)
+		pkt, err := packet.Parse(conn)
 		if err != nil {
 			log.Printf("%+v\n", err)
 			return
 		}
 
-		log.Println(string(buf))
+		log.Printf("packet:%+v\n", pkt)
 
-		conn.Write(buf)
+		//计算文件hash.
+		fHash := lib.FileHash(pkt.Body)
+		//验证文件是否损坏.
+		log.Println("计算的hash为:", fHash)
+		if fHash != pkt.Hash {
+			log.Println("文件不一致")
+			conn.Write([]byte("fail"))
+			return
+		}
+
+		fPath := conf.Conf.Node.StoreRoot + fHash
+		err = ioutil.WriteFile(fPath, buf, 0777)
+		if err != nil {
+			log.Printf("%+v\n", err)
+			return
+		}
+		conn.Write([]byte(fHash))
 	}
 }
 

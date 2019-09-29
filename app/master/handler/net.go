@@ -2,6 +2,7 @@ package handler
 
 import (
 	"log"
+	"math/rand"
 	"net"
 	"time"
 
@@ -39,10 +40,9 @@ func (this *TcpService) connStoreNode(addr string) {
 		}
 
 		this.conn[addr] = conn
+		log.Println(addr, "连接成功!")
 		return
 	}
-
-	log.Println(addr, "连接成功!")
 }
 
 func (this *TcpService) connection(addr string) (conn net.Conn, err error) {
@@ -54,29 +54,44 @@ func (this *TcpService) connection(addr string) (conn net.Conn, err error) {
 }
 
 //SelectNode 选择一个存储节点.
-func (this *TcpService) SelectNode() net.Conn {
-	addr := conf.Conf.Node.StoreAddrs[0]
-	return this.conn[addr]
+func (this *TcpService) SelectNode() (nodeip string, conn net.Conn) {
+	rand.Seed(time.Now().UnixNano())
+	index := rand.Int() % 2
+	addr := conf.Conf.Node.StoreAddrs[index]
+	log.Println("选择的节点为:", addr)
+	return addr, this.conn[addr]
 }
 
 //Write tcp 发送消息.
-func (this *TcpService) Write(b []byte) (msg []byte, err error) {
-	_, err = this.SelectNode().Write(b)
+func (this *TcpService) Write(b []byte) (msg []byte, nodeip string, err error) {
+	nodeip, conn := this.SelectNode()
+	_, err = conn.Write(b)
 	if err != nil {
 		log.Printf("%+v\n", err)
-		return msg, err
+		return msg, nodeip, err
 	}
 
 	for {
 		var buf = make([]byte, 1024)
-		_, err = this.SelectNode().Read(buf)
+		_, err = conn.Read(buf)
 		if err != nil {
 			log.Printf("%+v\n", err)
-			return msg, err
+			return msg, nodeip, err
 		}
 
-		return buf, nil
+		return buf, nodeip, nil
 	}
+}
+
+//Read tcp读取文件.
+func (this *TcpService) Read(nodeip, fHash string) (boby []byte, err error) {
+	_, err = net.Dial("tcp4", nodeip)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return boby, err
+	}
+
+	return boby, nil
 }
 
 // var Buf = make(chan []byte, 1024*100)

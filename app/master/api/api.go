@@ -3,12 +3,18 @@ package api
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
 
+	"goss.io/goss/lib/protocol"
+
 	"goss.io/goss/app/master/conf"
 	"goss.io/goss/app/master/handler"
+	"goss.io/goss/db"
+	"goss.io/goss/lib"
+	"goss.io/goss/lib/packet"
 )
 
 //ApiService.
@@ -57,22 +63,22 @@ func (this *ApiService) handler(w http.ResponseWriter, r *http.Request) {
 
 //get.
 func (this *ApiService) get(w http.ResponseWriter, r *http.Request) {
-	name, err := this.getParse(r.URL.EscapedPath())
-	if err != nil {
-		w.Write([]byte(err.Error()))
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
+	// name, err := this.getParse(r.URL.EscapedPath())
+	// if err != nil {
+	// 	w.Write([]byte(err.Error()))
+	// 	w.WriteHeader(http.StatusNotFound)
+	// 	return
+	// }
 
-	msg, err := this.Tcp.Write([]byte(name))
-	if err != nil {
-		w.Write([]byte(err.Error()))
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	// msg, err = this.Tcp.Write([]byte(name))
+	// if err != nil {
+	// 	w.Write([]byte(err.Error()))
+	// 	w.WriteHeader(http.StatusInternalServerError)
+	// 	return
+	// }
 
-	w.Header().Add("Content-Type", "text/html; charset=UTF-8")
-	w.Write(msg)
+	// w.Header().Add("Content-Type", "text/html; charset=UTF-8")
+	// w.Write(msg)
 }
 
 //getParse get请求解析文件名.
@@ -92,7 +98,45 @@ func (this *ApiService) getParse(url string) (name string, err error) {
 func (this *ApiService) put(w http.ResponseWriter, r *http.Request) {
 	//获取文件名称，文件大小，文件类型，文件hash.
 	//元数据.
+	file, head, err := r.FormFile("file")
+	if err != nil {
+		log.Printf("%+v\n", err)
+		w.Write([]byte("fail"))
+		return
+	}
 
+	b, err := ioutil.ReadAll(file)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		w.Write([]byte("fail"))
+		return
+	}
+
+	fhash := lib.FileHash(b)
+	pkt := packet.New(b, []byte(fhash), protocol.WriteFileProrocol)
+	_, nodeip, err := this.Tcp.Write(pkt)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		w.Write([]byte("fail"))
+		return
+	}
+
+	//记录文件元数据.
+	metadata := db.Metadata{
+		Name:      head.Filename,
+		Type:      "image/jpeg",
+		Size:      head.Size,
+		Hash:      fhash,
+		StoreNode: nodeip,
+	}
+
+	if err := metadata.Create(); err != nil {
+		log.Printf("%+v\n", err)
+		w.Write([]byte("fail"))
+		return
+	}
+
+	w.Write([]byte("success"))
 }
 
 //delete.

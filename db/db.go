@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/mysql"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"goss.io/goss/lib/ini"
 )
 
@@ -23,7 +23,7 @@ type DbConfig struct {
 }
 
 //Init .
-func Init() error {
+func Connection() error {
 	cf := DbConfig{
 		Host:     ini.GetString("db_host"),
 		User:     ini.GetString("db_user"),
@@ -38,15 +38,16 @@ func Init() error {
 
 //conndb .
 func conndb(cf DbConfig) error {
-	args := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=true",
-		cf.User,
-		cf.Password,
+	args := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		cf.Host,
 		cf.Port,
+		cf.User,
+		cf.Password,
 		cf.Name,
-		cf.Charset,
 	)
-	db, err := gorm.Open("mysql", args)
+
+	log.Println("args:", args)
+	db, err := gorm.Open("postgres", args)
 	if err != nil {
 		log.Printf("%+v\n", err)
 		return err
@@ -64,7 +65,8 @@ func conndb(cf DbConfig) error {
 //autoMigrate .
 func autoMigrate(db *gorm.DB) {
 	db.AutoMigrate(
-		&Oss{},
+		&User{},
+		&Bucket{},
 		&Metadata{},
 	)
 }

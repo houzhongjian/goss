@@ -2,8 +2,10 @@ package db
 
 type Bucket struct {
 	Model
-	Name   string
-	UserID int
+	AccessKey string
+	SecretKey string
+	Name      string
+	UserID    int
 }
 
 func (Bucket) TableName() string {
