@@ -8,11 +8,11 @@ import (
 	"net/http"
 	"strings"
 
+	"goss.io/goss/db"
 	"goss.io/goss/lib/protocol"
 
 	"goss.io/goss/app/master/conf"
 	"goss.io/goss/app/master/handler"
-	"goss.io/goss/db"
 	"goss.io/goss/lib"
 	"goss.io/goss/lib/packet"
 )
@@ -63,22 +63,34 @@ func (this *ApiService) handler(w http.ResponseWriter, r *http.Request) {
 
 //get.
 func (this *ApiService) get(w http.ResponseWriter, r *http.Request) {
-	// name, err := this.getParse(r.URL.EscapedPath())
-	// if err != nil {
-	// 	w.Write([]byte(err.Error()))
-	// 	w.WriteHeader(http.StatusNotFound)
-	// 	return
-	// }
+	name, err := this.getParse(r.URL.EscapedPath())
+	if err != nil {
+		w.Write([]byte(err.Error()))
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
 
-	// msg, err = this.Tcp.Write([]byte(name))
-	// if err != nil {
-	// 	w.Write([]byte(err.Error()))
-	// 	w.WriteHeader(http.StatusInternalServerError)
-	// 	return
-	// }
+	meta := db.Metadata{
+		Name: name,
+	}
+	if err = meta.Query(); err != nil {
+		log.Printf("%+v\n", err)
+		w.Write([]byte(err.Error()))
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
 
-	// w.Header().Add("Content-Type", "text/html; charset=UTF-8")
-	// w.Write(msg)
+	log.Printf("metadata:%+v\n", meta)
+
+	b, err := this.Tcp.Read(meta.StoreNode, meta.Hash, meta.Size)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		w.Write([]byte(err.Error()))
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	w.Write([]byte(b))
 }
 
 //getParse get请求解析文件名.

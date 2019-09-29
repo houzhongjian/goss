@@ -13,21 +13,20 @@ import (
 
 func main() {
 	st := time.Now().Unix()
-	for i := 1; i < 2; i++ {
+	for i := 1; i <= 1; i++ {
 		upload()
 	}
 
 	et := time.Now().Unix()
 
 	log.Println("共耗时:", et-st, "秒")
-
 }
 
 func upload() {
-	filename := "./timg.jpeg"
+	filename := "./liyongle.mp4"
 	bodyBuf := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuf)
-	writer, err := bodyWriter.CreateFormFile("file", "time.jpg")
+	writer, err := bodyWriter.CreateFormFile("file", "liyongle.mp4")
 	if err != nil {
 		log.Printf("%+v\n", err)
 		return
@@ -50,7 +49,7 @@ func upload() {
 	contentType := bodyWriter.FormDataContentType()
 	bodyWriter.Close()
 
-	req, err := http.NewRequest("PUT", "http://127.0.0.1/oss/time.jpg", bodyBuf)
+	req, err := http.NewRequest("PUT", "http://127.0.0.1/oss/liyongle.mp4", bodyBuf)
 	if err != nil {
 		log.Printf("%+v\n", err)
 		return

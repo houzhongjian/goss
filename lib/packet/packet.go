@@ -21,7 +21,7 @@ type Packet struct {
 }
 
 func New(content, fileHash []byte, num protocol.GossProtocol) []byte {
-	buffer := make([]byte, HEADER_LEN+len(content)+len(fileHash))
+	buffer := make([]byte, HEADER_LEN+len(content)+len(fileHash)+PROROCOL_LEN)
 	//0-4 为协议号.
 	//4-8 为文件大小.
 	//8-40 为文件hash.

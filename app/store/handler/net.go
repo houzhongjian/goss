@@ -5,11 +5,12 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"os"
 
-	"goss.io/goss/lib"
+	"goss.io/goss/lib/protocol"
 
 	"goss.io/goss/app/store/conf"
-	"goss.io/goss/lib/"
+	"goss.io/goss/lib"
 	"goss.io/goss/lib/packet"
 )
 
@@ -26,7 +27,18 @@ func NewStoreService() *StoreService {
 
 //Start .
 func (this *StoreService) Start() {
+	this.checkStorePath()
 	this.listen()
+}
+
+//checkStorePath 检查存储路径.
+func (this *StoreService) checkStorePath() {
+	if !lib.IsExists(conf.Conf.Node.StoreRoot) {
+		//创建存储文件夹.
+		if err := os.Mkdir(conf.Conf.Node.StoreRoot, 0777); err != nil {
+			log.Panicf("%+v\n", err)
+		}
+	}
 }
 
 //listen .
@@ -57,25 +69,47 @@ func (this *StoreService) handler(conn net.Conn) {
 			return
 		}
 
-		log.Printf("packet:%+v\n", pkt)
+		//判断协议号.
+		if pkt.Protocol == protocol.WriteFileProrocol {
+			//计算文件hash.
+			fHash := lib.FileHash(pkt.Body)
+			//验证文件是否损坏.
+			log.Println("计算的hash为:", fHash)
+			if fHash != pkt.Hash {
+				log.Println("文件不一致")
+				conn.Write([]byte("fail"))
+				return
+			}
 
-		//计算文件hash.
-		fHash := lib.FileHash(pkt.Body)
-		//验证文件是否损坏.
-		log.Println("计算的hash为:", fHash)
-		if fHash != pkt.Hash {
-			log.Println("文件不一致")
-			conn.Write([]byte("fail"))
-			return
+			fPath := conf.Conf.Node.StoreRoot + fHash
+			err = ioutil.WriteFile(fPath, pkt.Body, 0777)
+			if err != nil {
+				log.Printf("%+v\n", err)
+				return
+			}
+			conn.Write([]byte(fHash))
 		}
 
-		fPath := conf.Conf.Node.StoreRoot + fHash
-		err = ioutil.WriteFile(fPath, buf, 0777)
-		if err != nil {
-			log.Printf("%+v\n", err)
-			return
+		if pkt.Protocol == protocol.ReadFileProrocol {
+			log.Println("读取文件：", pkt.Hash)
+			//读取文件.
+			fpath := conf.Conf.Node.StoreRoot + pkt.Hash
+			b, err := ioutil.ReadFile(fpath)
+			if err != nil {
+				log.Printf("%+v\n", err)
+				return
+			}
+
+			log.Println("文件大小为:", len(b))
+
+			_, err = conn.Write(b)
+			if err != nil {
+				log.Printf("%+v\n", err)
+				return
+			}
+
+			log.Println("发送成功!")
 		}
-		conn.Write([]byte(fHash))
 	}
 }
 

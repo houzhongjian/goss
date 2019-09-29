@@ -19,3 +19,8 @@ func (Metadata) TableName() string {
 func (m *Metadata) Create() error {
 	return Db.Create(&m).Error
 }
+
+//Query.
+func (m *Metadata) Query() error {
+	return Db.Where("name = ?", m.Name).First(&m).Error
+}

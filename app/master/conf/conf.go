@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"goss.io/goss/app/master/cmd"
+	"goss.io/goss/lib"
 	"goss.io/goss/lib/ini"
 )
 
@@ -34,7 +35,7 @@ var Conf *Config
 //Load .
 func Load(cmd *cmd.Command) {
 	iniPath := cmd.Conf
-	if !iniIsExists(cmd.Conf) {
+	if !lib.IsExists(cmd.Conf) {
 		log.Println("配置文件不存在=>", iniPath)
 		os.Exit(0)
 		return
@@ -130,13 +131,4 @@ func parseDbConfig() *dbConfig {
 		Password: dbPwd,
 	}
 	return dbconf
-}
-
-//iniIsExists 判断ini是否存在.
-func iniIsExists(ini string) bool {
-	_, err := os.Stat(ini)
-	if err != nil {
-		return false
-	}
-	return true
 }

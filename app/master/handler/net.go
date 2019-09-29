@@ -1,10 +1,16 @@
 package handler
 
 import (
+	"io"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net"
 	"time"
+
+	"goss.io/goss/lib/protocol"
+
+	"goss.io/goss/lib/packet"
 
 	"goss.io/goss/app/master/conf"
 )
@@ -56,7 +62,7 @@ func (this *TcpService) connection(addr string) (conn net.Conn, err error) {
 //SelectNode 选择一个存储节点.
 func (this *TcpService) SelectNode() (nodeip string, conn net.Conn) {
 	rand.Seed(time.Now().UnixNano())
-	index := rand.Int() % 2
+	index := rand.Int() % len(conf.Conf.Node.StoreAddrs)
 	addr := conf.Conf.Node.StoreAddrs[index]
 	log.Println("选择的节点为:", addr)
 	return addr, this.conn[addr]
@@ -84,14 +90,30 @@ func (this *TcpService) Write(b []byte) (msg []byte, nodeip string, err error) {
 }
 
 //Read tcp读取文件.
-func (this *TcpService) Read(nodeip, fHash string) (boby []byte, err error) {
-	_, err = net.Dial("tcp4", nodeip)
+func (this *TcpService) Read(nodeip, fHash string, bodylen int64) (boby []byte, err error) {
+	conn, err := net.Dial("tcp4", nodeip)
 	if err != nil {
 		log.Printf("%+v\n", err)
 		return boby, err
 	}
 
-	return boby, nil
+	pkt := packet.New(nil, []byte(fHash), protocol.ReadFileProrocol)
+	_, err = conn.Write(pkt)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return boby, err
+	}
+
+	for {
+		var buf = make([]byte, bodylen)
+		_, err = io.ReadFull(conn, buf)
+		if err != nil {
+			log.Printf("%+v\n", err)
+			return boby, err
+		}
+		ioutil.WriteFile("1.jprg", buf, 0777)
+		return buf, nil
+	}
 }
 
 // var Buf = make(chan []byte, 1024*100)
