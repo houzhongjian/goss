@@ -127,7 +127,6 @@ func (this *ApiService) put(w http.ResponseWriter, r *http.Request) {
 	//获取文件类型.
 	f16 := fmt.Sprintf("%x", fBody)
 	ft := filetype.Parse(f16[:10])
-	log.Println("fileType:", ft)
 
 	fhash := lib.FileHash(fBody)
 	pkt := packet.New(fBody, []byte(fhash), protocol.WriteFileProrocol)

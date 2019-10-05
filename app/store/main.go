@@ -11,7 +11,6 @@ import (
 
 func main() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
-
 	cmd := cmd.New()
 
 	//加载配置文件.

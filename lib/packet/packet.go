@@ -2,10 +2,12 @@ package packet
 
 import (
 	"encoding/binary"
+	"fmt"
 	"io"
 	"log"
 	"net"
 
+	"goss.io/goss/lib/logd"
 	"goss.io/goss/lib/protocol"
 )
 
@@ -53,6 +55,7 @@ func Parse(conn net.Conn) (pkt Packet, err error) {
 		return pkt, err
 	}
 	pkt.Size = int64(binary.BigEndian.Uint32(header))
+	logd.Make(logd.Level_INFO, logd.GetLogpath(), fmt.Sprintf("文件大小为:%d", pkt.Size))
 
 	//获取hash.
 	var fhash = make([]byte, HASH_LEN)
@@ -62,6 +65,7 @@ func Parse(conn net.Conn) (pkt Packet, err error) {
 		return pkt, err
 	}
 	pkt.Hash = string(fhash)
+	logd.Make(logd.Level_INFO, logd.GetLogpath(), fmt.Sprintf("文件hash为:%s", pkt.Hash))
 
 	//获取文件
 	var buf = make([]byte, pkt.Size)

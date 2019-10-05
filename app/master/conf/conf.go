@@ -13,6 +13,7 @@ import (
 type Config struct {
 	Node *nodeConfig
 	Db   *dbConfig
+	Base *baseConfig
 }
 
 type dbConfig struct {
@@ -28,6 +29,10 @@ type nodeConfig struct {
 	Port       int
 	Name       string
 	StoreAddrs []string
+}
+
+type baseConfig struct {
+	LogPath string //日志存放路径.
 }
 
 var Conf *Config
@@ -49,6 +54,7 @@ func Load(cmd *cmd.Command) {
 	cf := &Config{
 		Db:   parseDbConfig(),
 		Node: parseNodeConfig(cmd),
+		Base: parseBaseConfig(),
 	}
 
 	Conf = cf
@@ -131,4 +137,17 @@ func parseDbConfig() *dbConfig {
 		Password: dbPwd,
 	}
 	return dbconf
+}
+
+//parseBaseConfig 解析基础配置.
+func parseBaseConfig() *baseConfig {
+	logpath := ini.GetString("log_path")
+	if len(logpath) < 1 {
+		log.Println("log_path 不能为空")
+		os.Exit(0)
+	}
+	base := baseConfig{
+		LogPath: logpath,
+	}
+	return &base
 }

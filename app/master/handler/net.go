@@ -2,7 +2,6 @@ package handler
 
 import (
 	"io"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"net"
@@ -111,7 +110,6 @@ func (this *TcpService) Read(nodeip, fHash string, bodylen int64) (boby []byte, 
 			log.Printf("%+v\n", err)
 			return boby, err
 		}
-		ioutil.WriteFile("1.jprg", buf, 0777)
 		return buf, nil
 	}
 }
