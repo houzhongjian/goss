@@ -20,6 +20,7 @@ type nodeConfig struct {
 	Port      int
 	Name      string
 	StoreRoot string
+	ZooNode   string
 }
 
 type baseConfig struct {
@@ -74,12 +75,18 @@ func parseNodeConfig(cmd *cmd.Command) *nodeConfig {
 		log.Println("store_root 不能为空")
 		os.Exit(0)
 	}
+	zooNode := ini.GetString("zoo_node")
+	if len(storeRoot) < 1 {
+		log.Println("zoo_node 不能为空")
+		os.Exit(0)
+	}
 
 	nodeconf := &nodeConfig{
 		IP:        storeip,
 		Port:      storeport,
 		Name:      name,
 		StoreRoot: storeRoot,
+		ZooNode:   zooNode,
 	}
 
 	return nodeconf

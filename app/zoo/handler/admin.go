@@ -10,18 +10,19 @@ import (
 	"goss.io/goss/lib/ini"
 )
 
-type Admin struct {
+type AdminService struct {
 	WebPort string
 }
 
-func NewAdmin() *Admin {
-	return &Admin{
+func NewAdmin() {
+	adm := &AdminService{
 		WebPort: fmt.Sprintf(":%d", ini.GetInt("node_web_port")),
 	}
+	adm.Start()
 }
 
 //Start .
-func (this *Admin) Start() {
+func (this *AdminService) Start() {
 	r := gin.Default()
 	r.Static("/img", "./admin/static/img/")
 	r.Static("/css", "./admin/static/css/")
@@ -35,7 +36,7 @@ func (this *Admin) Start() {
 }
 
 //handleLogin .
-func (this *Admin) handleLogin(c *gin.Context) {
+func (this *AdminService) handleLogin(c *gin.Context) {
 	if c.Request.Method == "POST" {
 		return
 	}

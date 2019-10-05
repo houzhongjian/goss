@@ -15,6 +15,6 @@ func main() {
 	conf.Load(cmd)
 	log.Println("node name:", conf.Conf.Node.Name)
 
-	adm := handler.NewAdmin()
-	adm.Start()
+	zoo := handler.NewZoo()
+	zoo.Start()
 }

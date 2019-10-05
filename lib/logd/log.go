@@ -22,6 +22,10 @@ const (
 )
 
 func Make(level LogLevel, logpath string, msg interface{}) {
+	makelog(level, logpath, msg)
+}
+
+func makelog(level LogLevel, logpath string, msg interface{}) {
 	logTime := time.Now().Format("2006-01-02 15:04:05")
 
 	hostname, _ := os.Hostname()
@@ -34,6 +38,7 @@ func Make(level LogLevel, logpath string, msg interface{}) {
 		f.Close()
 		return
 	}
+	log.Println(content)
 	_, err = f.WriteString(content)
 	if err != nil {
 		log.Printf("%+v\n", err)

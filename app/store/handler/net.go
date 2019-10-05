@@ -6,6 +6,11 @@ import (
 	"log"
 	"net"
 	"os"
+	"time"
+
+	"goss.io/goss/lib/logd"
+
+	"goss.io/goss/lib/ini"
 
 	"goss.io/goss/lib/protocol"
 
@@ -15,12 +20,16 @@ import (
 )
 
 type StoreService struct {
-	Port string
+	Port    string
+	Addr    string
+	ZooNode string
 }
 
 func NewStoreService() *StoreService {
 	s := &StoreService{
-		Port: fmt.Sprintf(":%d", conf.Conf.Node.Port),
+		Port:    fmt.Sprintf(":%d", conf.Conf.Node.Port),
+		Addr:    fmt.Sprintf("%s:%d", ini.GetString("node_ip"), ini.GetInt("node_port")),
+		ZooNode: ini.GetString("zoo_node"),
 	}
 	return s
 }
@@ -28,7 +37,27 @@ func NewStoreService() *StoreService {
 //Start .
 func (this *StoreService) Start() {
 	this.checkStorePath()
+	go this.connzoo()
 	this.listen()
+}
+
+//connzoo 连接管理节点.
+func (this *StoreService) connzoo() {
+	//上报节点信息
+	conn := this.conn(this.ZooNode)
+	pkt := packet.NewNode(packet.NodeTypes_Store, this.Addr, protocol.NodeAddProtocol)
+	conn.Write(pkt)
+}
+
+func (this *StoreService) conn(node string) net.Conn {
+	conn, err := net.Dial("tcp4", node)
+	if err != nil {
+		logd.Make(logd.Level_WARNING, logd.GetLogpath(), "zoo节点连接失败，稍后重新连接")
+		time.Sleep(time.Second * 1)
+		this.conn(node)
+	}
+
+	return conn
 }
 
 //checkStorePath 检查存储路径.
