@@ -16,10 +16,10 @@ type Config struct {
 }
 
 type nodeConfig struct {
-	IP        string
-	Port      int
-	Name      string
-	StoreRoot string
+	IP      string
+	Port    int
+	WebPort int
+	Name    string
 }
 
 type baseConfig struct {
@@ -68,18 +68,17 @@ func parseNodeConfig(cmd *cmd.Command) *nodeConfig {
 		log.Println("node_port 不能为空")
 		os.Exit(0)
 	}
-
-	storeRoot := ini.GetString("store_root")
-	if len(storeRoot) < 1 {
-		log.Println("store_root 不能为空")
+	webport := ini.GetInt("node_web_port")
+	if webport < 1 {
+		log.Println("node_web_port 不能为空")
 		os.Exit(0)
 	}
 
 	nodeconf := &nodeConfig{
-		IP:        storeip,
-		Port:      storeport,
-		Name:      name,
-		StoreRoot: storeRoot,
+		IP:      storeip,
+		Port:    storeport,
+		WebPort: webport,
+		Name:    name,
 	}
 
 	return nodeconf

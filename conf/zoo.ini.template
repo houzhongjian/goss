@@ -1,9 +1,8 @@
-
 #节点配置
-node_name=store_node_1
+node_name=zoo_node
 node_ip = 127.0.0.1
-node_port = 9001
+node_port = 8000
+node_web_port=8080
 
 #基础配置
-store_root=/disk/store1/
 log_path = ../log/
