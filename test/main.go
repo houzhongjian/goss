@@ -2,12 +2,10 @@ package main
 
 import (
 	"bytes"
-	"io"
+	"fmt"
 	"io/ioutil"
 	"log"
-	"mime/multipart"
 	"net/http"
-	"os"
 	"time"
 )
 
@@ -23,51 +21,27 @@ func main() {
 }
 
 func upload() {
-	filename := "./liyongle.mp4"
-	bodyBuf := &bytes.Buffer{}
-	bodyWriter := multipart.NewWriter(bodyBuf)
-	writer, err := bodyWriter.CreateFormFile("file", "liyongle.mp4")
-	if err != nil {
-		log.Printf("%+v\n", err)
-		return
-	}
-	//打开文件句柄操作
-	fh, err := os.Open(filename)
-	if err != nil {
-		log.Printf("%+v\n", err)
-		return
-	}
-	defer fh.Close()
-
-	//iocopy
-	_, err = io.Copy(writer, fh)
-	if err != nil {
-		log.Printf("%+v\n", err)
-		return
-	}
-
-	contentType := bodyWriter.FormDataContentType()
-	bodyWriter.Close()
-
-	req, err := http.NewRequest("PUT", "http://127.0.0.1/oss/liyongle.mp4", bodyBuf)
+	filename := "./1.gif"
+	b, err := ioutil.ReadFile(filename)
 	if err != nil {
 		log.Printf("%+v\n", err)
 		return
 	}
 
 	client := http.Client{}
-	req.Header.Add("Content-Type", contentType)
-	resp, err := client.Do(req)
+	fname := fmt.Sprintf("http://127.0.0.1/oss/%d", time.Now().Unix())
+	req, err := http.NewRequest("PUT", fname, bytes.NewBuffer(b))
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return
+	}
+	req.Header.Add("AccessKey", "")
+	req.Header.Add("SecretKey", "")
+	_, err = client.Do(req)
 	if err != nil {
 		log.Printf("%+v\n", err)
 		return
 	}
 
-	b, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Printf("%+v\n", err)
-		return
-	}
-
-	log.Println(string(b))
+	log.Println(fname)
 }

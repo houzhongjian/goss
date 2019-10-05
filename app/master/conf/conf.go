@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"goss.io/goss/app/master/cmd"
 	"goss.io/goss/lib"
+	"goss.io/goss/lib/cmd"
 	"goss.io/goss/lib/ini"
 )
 

@@ -3,10 +3,10 @@ package main
 import (
 	"log"
 
-	"goss.io/goss/app/master/cmd"
 	"goss.io/goss/app/master/conf"
 	"goss.io/goss/app/master/node"
 	"goss.io/goss/db"
+	"goss.io/goss/lib/cmd"
 )
 
 func main() {

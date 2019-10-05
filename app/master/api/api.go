@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"goss.io/goss/db"
+	"goss.io/goss/lib/filetype"
 	"goss.io/goss/lib/protocol"
 
 	"goss.io/goss/app/master/conf"
@@ -89,7 +90,6 @@ func (this *ApiService) get(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-
 	w.Write([]byte(b))
 }
 
@@ -110,22 +110,27 @@ func (this *ApiService) getParse(url string) (name string, err error) {
 func (this *ApiService) put(w http.ResponseWriter, r *http.Request) {
 	//获取文件名称，文件大小，文件类型，文件hash.
 	//元数据.
-	file, head, err := r.FormFile("file")
+	name, err := this.getParse(r.URL.EscapedPath())
+	if err != nil {
+		w.Write([]byte(err.Error()))
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	fBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("%+v\n", err)
 		w.Write([]byte("fail"))
 		return
 	}
 
-	b, err := ioutil.ReadAll(file)
-	if err != nil {
-		log.Printf("%+v\n", err)
-		w.Write([]byte("fail"))
-		return
-	}
+	//获取文件类型.
+	f16 := fmt.Sprintf("%x", fBody)
+	ft := filetype.Parse(f16[:10])
+	log.Println("fileType:", ft)
 
-	fhash := lib.FileHash(b)
-	pkt := packet.New(b, []byte(fhash), protocol.WriteFileProrocol)
+	fhash := lib.FileHash(fBody)
+	pkt := packet.New(fBody, []byte(fhash), protocol.WriteFileProrocol)
 	_, nodeip, err := this.Tcp.Write(pkt)
 	if err != nil {
 		log.Printf("%+v\n", err)
@@ -135,9 +140,9 @@ func (this *ApiService) put(w http.ResponseWriter, r *http.Request) {
 
 	//记录文件元数据.
 	metadata := db.Metadata{
-		Name:      head.Filename,
-		Type:      "image/jpeg",
-		Size:      head.Size,
+		Name:      name,
+		Type:      ft,
+		Size:      int64(len(fBody)),
 		Hash:      fhash,
 		StoreNode: nodeip,
 	}

@@ -5,8 +5,8 @@ import (
 
 	"goss.io/goss/app/store/handler"
 
-	"goss.io/goss/app/store/cmd"
 	"goss.io/goss/app/store/conf"
+	"goss.io/goss/lib/cmd"
 )
 
 func main() {

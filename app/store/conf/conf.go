@@ -6,7 +6,7 @@ import (
 
 	"goss.io/goss/lib"
 
-	"goss.io/goss/app/store/cmd"
+	"goss.io/goss/lib/cmd"
 	"goss.io/goss/lib/ini"
 )
 
