@@ -15,3 +15,4 @@ node_store_addr=127.0.0.1:9001
 
 #基础配置
 log_path = ../log/
+master_node=127.0.0.1:8000

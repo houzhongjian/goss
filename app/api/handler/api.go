@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strings"
 
+	"goss.io/goss/lib/ini"
+
 	"goss.io/goss/db"
 	"goss.io/goss/lib/filetype"
 	"goss.io/goss/lib/protocol"
@@ -19,22 +21,28 @@ import (
 
 //ApiService.
 type ApiService struct {
-	Port string
-	Tcp  *TcpService
+	Port       string
+	Tcp        *TcpService
+	Addr       string
+	MasterNode string
 }
 
 //NewApi .
 func NewApi() *ApiService {
 	cf := conf.Conf.Node
 	apiSrv := ApiService{
-		Port: fmt.Sprintf(":%d", cf.Port),
-		Tcp:  NewTcpService(),
+		Port:       fmt.Sprintf(":%d", cf.Port),
+		Tcp:        NewTcpService(),
+		Addr:       fmt.Sprintf("%s:%d", ini.GetString("node_ip"), ini.GetInt("node_port")),
+		MasterNode: ini.GetString("master_node"),
 	}
 	return &apiSrv
 }
 
+//Start .
 func (this *ApiService) Start() {
 	go this.Tcp.Start()
+	go this.connMaster()
 	this.httpSrv()
 }
 
@@ -46,6 +54,7 @@ func (this *ApiService) httpSrv() {
 	}
 }
 
+//handler .
 func (this *ApiService) handler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		this.get(w, r)

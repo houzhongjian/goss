@@ -51,17 +51,19 @@ func (this *MasterService) listen() {
 		}
 		ip := conn.RemoteAddr().String()
 		logd.Make(logd.Level_INFO, logd.GetLogpath(), "收到来自:"+ip+"的连接请求")
-		go this.handler(conn)
+		go this.handler(ip, conn)
 	}
 }
 
 //handler .
-func (this *MasterService) handler(conn net.Conn) {
+func (this *MasterService) handler(ip string, conn net.Conn) {
 	defer conn.Close()
 	for {
 		pkt, err := packet.ParseNode(conn)
 		if err != nil {
-			logd.Make(logd.Level_WARNING, logd.GetLogpath(), err.Error())
+			logd.Make(logd.Level_WARNING, logd.GetLogpath(), ip+"断开连接")
+			//从节点列表中移除.
+			RemoveNode(ip)
 			return
 		}
 
@@ -70,23 +72,24 @@ func (this *MasterService) handler(conn net.Conn) {
 			//新增节点信息.
 			info := Node{
 				Types:    pkt.Types,
-				IP:       pkt.IP,
+				IP:       ip,
+				SourceIP: pkt.IP,
 				CreateAt: lib.Time(),
 			}
 			NodeInfo = append(NodeInfo, info)
 
 			//新节点上线通知对应的节点.
-			if len(info.Types) == len(packet.NodeTypes_Storage) {
+			if info.Types == packet.NodeTypes_Storage {
 				//通知api节点.
-				masterList := GetMasterList()
-				log.Printf("masterList:%+v\n", masterList)
+				apiList := GetApiList()
+				log.Printf("apiList:%+v\n", apiList)
 			}
 
 			if info.Types == packet.NodeTypes_Api {
 				//告知新上线的api节点多有的storage节点ip.
-				storeList := GetStoreList()
+				storageList := GetStorageList()
 
-				log.Printf("storeList:%+v\n", storeList)
+				log.Printf("storageList:%+v\n", storageList)
 			}
 		}
 	}

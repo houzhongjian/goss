@@ -28,17 +28,19 @@ func (this *AdminService) Start() {
 	r.Static("/css", "./admin/static/css/")
 	r.LoadHTMLGlob("./admin/views/*")
 
-	r.GET("/login", this.handleLogin)
-	r.POST("/login", this.handleLogin)
+	r.GET("/console", this.handleConsole)
 	if err := r.Run(this.WebPort); err != nil {
 		log.Panicln(err)
 	}
 }
 
-//handleLogin .
-func (this *AdminService) handleLogin(c *gin.Context) {
-	if c.Request.Method == "POST" {
-		return
-	}
-	c.HTML(http.StatusOK, "login.html", nil)
+//handleConsole .
+func (this *AdminService) handleConsole(c *gin.Context) {
+
+	//获取所有的api节点.
+	apiList := GetApiList()
+
+	//获取所有的存储节点.
+	storageList := GetStorageList()
+	c.HTML(http.StatusOK, "console.html", map[string]interface{}{"apiList": apiList, "storageList": storageList})
 }

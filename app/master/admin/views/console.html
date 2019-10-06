@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+    <head>
+        <title>集群管理控制台</title>
+        <meta charset="utf8">
+    </head>
+
+    <body>
+        <h4>api节点列表</h4>
+        <table>
+            <tr>
+                <td>ip</td>
+                <td>操作</td>
+            </tr>
+            {{range $k,$v := .apiList}}
+            <tr>
+                <td>{{$v}}</td>
+                <td>操作</td>
+            </tr>
+            {{end}}
+        </table>
+        <h4>storage节点列表</h4>
+        <table>
+            <tr>
+                <td>ip</td>
+                <td>操作</td>
+            </tr>
+            {{range $k,$v := .storageList}}
+            <tr>
+                <td>{{$v}}</td>
+                <td>操作</td>
+            </tr>
+            {{end}}
+            </table>
+    </body>
+</html>
