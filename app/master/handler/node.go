@@ -17,7 +17,7 @@ type Node struct {
 func GetStoreList() []string {
 	list := []string{}
 	for _, v := range NodeInfo {
-		if v.Types == packet.NodeTypes_Store {
+		if v.Types == packet.NodeTypes_Storage {
 			list = append(list, v.IP)
 		}
 	}
@@ -25,11 +25,11 @@ func GetStoreList() []string {
 	return list
 }
 
-//获取所有的master节点.
+//获取所有的api节点.
 func GetMasterList() []string {
 	list := []string{}
 	for _, v := range NodeInfo {
-		if v.Types == packet.NodeTypes_Master {
+		if v.Types == packet.NodeTypes_Api {
 			list = append(list, v.IP)
 		}
 	}

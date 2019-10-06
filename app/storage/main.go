@@ -3,9 +3,9 @@ package main
 import (
 	"log"
 
-	"goss.io/goss/app/store/handler"
+	"goss.io/goss/app/storage/handler"
 
-	"goss.io/goss/app/store/conf"
+	"goss.io/goss/app/storage/conf"
 	"goss.io/goss/lib/cmd"
 )
 
@@ -16,6 +16,6 @@ func main() {
 	conf.Load(cmd)
 	log.Println("node name:", conf.Conf.Node.Name)
 
-	store := handler.NewStoreService()
-	store.Start()
+	storage := handler.NewStorageService()
+	storage.Start()
 }

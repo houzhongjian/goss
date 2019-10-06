@@ -14,45 +14,45 @@ import (
 
 	"goss.io/goss/lib/protocol"
 
-	"goss.io/goss/app/store/conf"
+	"goss.io/goss/app/storage/conf"
 	"goss.io/goss/lib"
 	"goss.io/goss/lib/packet"
 )
 
-type StoreService struct {
-	Port    string
-	Addr    string
-	ZooNode string
+type StorageService struct {
+	Port       string
+	Addr       string
+	MasterNode string
 }
 
-func NewStoreService() *StoreService {
-	s := &StoreService{
-		Port:    fmt.Sprintf(":%d", conf.Conf.Node.Port),
-		Addr:    fmt.Sprintf("%s:%d", ini.GetString("node_ip"), ini.GetInt("node_port")),
-		ZooNode: ini.GetString("zoo_node"),
+func NewStorageService() *StorageService {
+	s := &StorageService{
+		Port:       fmt.Sprintf(":%d", conf.Conf.Node.Port),
+		Addr:       fmt.Sprintf("%s:%d", ini.GetString("node_ip"), ini.GetInt("node_port")),
+		MasterNode: ini.GetString("master_node"),
 	}
 	return s
 }
 
 //Start .
-func (this *StoreService) Start() {
-	this.checkStorePath()
-	go this.connzoo()
+func (this *StorageService) Start() {
+	this.checkStoragePath()
+	go this.connMaster()
 	this.listen()
 }
 
-//connzoo 连接管理节点.
-func (this *StoreService) connzoo() {
+//connMaster 连接管理节点.
+func (this *StorageService) connMaster() {
 	//上报节点信息
-	conn := this.conn(this.ZooNode)
-	pkt := packet.NewNode(packet.NodeTypes_Store, this.Addr, protocol.NodeAddProtocol)
+	conn := this.conn(this.MasterNode)
+	pkt := packet.NewNode(packet.NodeTypes_Storage, this.Addr, protocol.NodeAddProtocol)
 	conn.Write(pkt)
 }
 
-func (this *StoreService) conn(node string) net.Conn {
+func (this *StorageService) conn(node string) net.Conn {
 	conn, err := net.Dial("tcp4", node)
 	if err != nil {
-		logd.Make(logd.Level_WARNING, logd.GetLogpath(), "zoo节点连接失败，稍后重新连接")
+		logd.Make(logd.Level_WARNING, logd.GetLogpath(), "master节点连接失败，稍后重新连接")
 		time.Sleep(time.Second * 1)
 		this.conn(node)
 	}
@@ -60,18 +60,18 @@ func (this *StoreService) conn(node string) net.Conn {
 	return conn
 }
 
-//checkStorePath 检查存储路径.
-func (this *StoreService) checkStorePath() {
-	if !lib.IsExists(conf.Conf.Node.StoreRoot) {
+//checkStoragePath 检查存储路径.
+func (this *StorageService) checkStoragePath() {
+	if !lib.IsExists(conf.Conf.Node.StorageRoot) {
 		//创建存储文件夹.
-		if err := os.Mkdir(conf.Conf.Node.StoreRoot, 0777); err != nil {
+		if err := os.Mkdir(conf.Conf.Node.StorageRoot, 0777); err != nil {
 			log.Panicf("%+v\n", err)
 		}
 	}
 }
 
 //listen .
-func (this *StoreService) listen() {
+func (this *StorageService) listen() {
 	listener, err := net.Listen("tcp4", this.Port)
 	if err != nil {
 		log.Printf("%s 端口监听失败!%+v\n", err)
@@ -89,7 +89,7 @@ func (this *StoreService) listen() {
 	}
 }
 
-func (this *StoreService) handler(conn net.Conn) {
+func (this *StorageService) handler(conn net.Conn) {
 	defer conn.Close()
 	for {
 		pkt, err := packet.Parse(conn)
@@ -110,7 +110,7 @@ func (this *StoreService) handler(conn net.Conn) {
 				return
 			}
 
-			fPath := conf.Conf.Node.StoreRoot + fHash
+			fPath := conf.Conf.Node.StorageRoot + fHash
 			err = ioutil.WriteFile(fPath, pkt.Body, 0777)
 			if err != nil {
 				log.Printf("%+v\n", err)
@@ -122,7 +122,7 @@ func (this *StoreService) handler(conn net.Conn) {
 		if pkt.Protocol == protocol.ReadFileProrocol {
 			log.Println("读取文件：", pkt.Hash)
 			//读取文件.
-			fpath := conf.Conf.Node.StoreRoot + pkt.Hash
+			fpath := conf.Conf.Node.StorageRoot + pkt.Hash
 			b, err := ioutil.ReadFile(fpath)
 			if err != nil {
 				log.Printf("%+v\n", err)

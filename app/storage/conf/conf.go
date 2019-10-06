@@ -16,11 +16,11 @@ type Config struct {
 }
 
 type nodeConfig struct {
-	IP        string
-	Port      int
-	Name      string
-	StoreRoot string
-	ZooNode   string
+	IP          string
+	Port        int
+	Name        string
+	StorageRoot string
+	MasterNode  string
 }
 
 type baseConfig struct {
@@ -59,34 +59,34 @@ func parseNodeConfig(cmd *cmd.Command) *nodeConfig {
 		os.Exit(0)
 	}
 
-	storeip := ini.GetString("node_ip")
-	if len(storeip) < 1 {
+	storageip := ini.GetString("node_ip")
+	if len(storageip) < 1 {
 		log.Println("node_ip 不能为空")
 		os.Exit(0)
 	}
-	storeport := ini.GetInt("node_port")
-	if storeport < 1 {
+	storageport := ini.GetInt("node_port")
+	if storageport < 1 {
 		log.Println("node_port 不能为空")
 		os.Exit(0)
 	}
 
-	storeRoot := ini.GetString("store_root")
-	if len(storeRoot) < 1 {
-		log.Println("store_root 不能为空")
+	storageRoot := ini.GetString("storage_root")
+	if len(storageRoot) < 1 {
+		log.Println("storage_root 不能为空")
 		os.Exit(0)
 	}
-	zooNode := ini.GetString("zoo_node")
-	if len(storeRoot) < 1 {
-		log.Println("zoo_node 不能为空")
+	masterNode := ini.GetString("master_node")
+	if len(masterNode) < 1 {
+		log.Println("master_node 不能为空")
 		os.Exit(0)
 	}
 
 	nodeconf := &nodeConfig{
-		IP:        storeip,
-		Port:      storeport,
-		Name:      name,
-		StoreRoot: storeRoot,
-		ZooNode:   zooNode,
+		IP:          storageip,
+		Port:        storageport,
+		Name:        name,
+		StorageRoot: storageRoot,
+		MasterNode:  masterNode,
 	}
 
 	return nodeconf

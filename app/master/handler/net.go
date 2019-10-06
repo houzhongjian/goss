@@ -76,14 +76,14 @@ func (this *MasterService) handler(conn net.Conn) {
 			NodeInfo = append(NodeInfo, info)
 
 			//新节点上线通知对应的节点.
-			if len(info.Types) == len(packet.NodeTypes_Store) {
-				//通知master节点.
+			if len(info.Types) == len(packet.NodeTypes_Storage) {
+				//通知api节点.
 				masterList := GetMasterList()
 				log.Printf("masterList:%+v\n", masterList)
 			}
 
-			if info.Types == packet.NodeTypes_Master {
-				//告知新上线的master节点多有的store节点ip.
+			if info.Types == packet.NodeTypes_Api {
+				//告知新上线的api节点多有的storage节点ip.
 				storeList := GetStoreList()
 
 				log.Printf("storeList:%+v\n", storeList)

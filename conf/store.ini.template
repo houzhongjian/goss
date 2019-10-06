@@ -1,9 +1,9 @@
 
 #节点配置
-node_name=store_node_1
+node_name=storage_node_1
 node_ip = 127.0.0.1
 node_port = 9001
 
 #基础配置
-store_root=/disk/store1/
+storage_root=/disk/storage/
 log_path = ../log/

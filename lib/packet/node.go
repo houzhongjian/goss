@@ -14,9 +14,9 @@ import (
 type NodeTypes string
 
 const (
-	NodeTypes_Master NodeTypes = "master"
-	NodeTypes_Store            = "store"
-	NodeTypes_Zoo              = "zoo"
+	NodeTypes_Api     NodeTypes = "api"
+	NodeTypes_Storage           = "stprage"
+	NodeTypes_Master            = "master"
 )
 
 //NodePacket 节点管理数据.
