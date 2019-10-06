@@ -1,4 +1,4 @@
-package api
+package handler
 
 import (
 	"errors"
@@ -12,8 +12,7 @@ import (
 	"goss.io/goss/lib/filetype"
 	"goss.io/goss/lib/protocol"
 
-	"goss.io/goss/app/master/conf"
-	"goss.io/goss/app/master/handler"
+	"goss.io/goss/app/api/conf"
 	"goss.io/goss/lib"
 	"goss.io/goss/lib/packet"
 )
@@ -21,18 +20,22 @@ import (
 //ApiService.
 type ApiService struct {
 	Port string
-	Tcp  *handler.TcpService
+	Tcp  *TcpService
 }
 
-//NewService .
-func NewService() {
+//NewApi .
+func NewApi() *ApiService {
 	cf := conf.Conf.Node
 	apiSrv := ApiService{
 		Port: fmt.Sprintf(":%d", cf.Port),
-		Tcp:  handler.NewTcpService(),
+		Tcp:  NewTcpService(),
 	}
-	go apiSrv.Tcp.Start()
-	apiSrv.httpSrv()
+	return &apiSrv
+}
+
+func (this *ApiService) Start() {
+	go this.Tcp.Start()
+	this.httpSrv()
 }
 
 //httpSrv .
@@ -80,8 +83,6 @@ func (this *ApiService) get(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-
-	log.Printf("metadata:%+v\n", meta)
 
 	b, err := this.Tcp.Read(meta.StoreNode, meta.Hash, meta.Size)
 	if err != nil {

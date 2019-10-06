@@ -26,10 +26,8 @@ func Make(level LogLevel, logpath string, msg interface{}) {
 }
 
 func makelog(level LogLevel, logpath string, msg interface{}) {
-	logTime := time.Now().Format("2006-01-02 15:04:05")
-
 	hostname, _ := os.Hostname()
-	content := fmt.Sprintf("%s %s:[%s] %s [%v]\n", logTime, hostname, level, logpath, msg)
+	content := fmt.Sprintf("%s %s:[%s] %s [%v]\n", lib.Time(), hostname, level, logpath, msg)
 
 	logFile := logFile()
 	f, err := os.OpenFile(logFile, os.O_CREATE|os.O_APPEND|os.O_RDONLY|os.O_WRONLY, 0777)
@@ -38,7 +36,7 @@ func makelog(level LogLevel, logpath string, msg interface{}) {
 		f.Close()
 		return
 	}
-	log.Println(content)
+	println(content)
 	_, err = f.WriteString(content)
 	if err != nil {
 		log.Printf("%+v\n", err)

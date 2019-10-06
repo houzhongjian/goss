@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"time"
-
 	"goss.io/goss/lib/packet"
 )
 
@@ -12,7 +10,7 @@ var NodeInfo = []Node{}
 type Node struct {
 	Types    packet.NodeTypes
 	IP       string
-	CreateAt time.Time
+	CreateAt string
 }
 
 //GetStoreList 获取所有的存储节点.

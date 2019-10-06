@@ -3,36 +3,27 @@ package conf
 import (
 	"log"
 	"os"
-	"strings"
 
 	"goss.io/goss/lib"
+
 	"goss.io/goss/lib/cmd"
 	"goss.io/goss/lib/ini"
 )
 
 type Config struct {
 	Node *nodeConfig
-	Db   *dbConfig
 	Base *baseConfig
 }
 
-type dbConfig struct {
-	Host     string
-	User     string
-	Port     int
-	Name     string
-	Password string
-}
-
 type nodeConfig struct {
-	IP         string
-	Port       int
-	Name       string
-	StoreAddrs []string
+	IP      string
+	Port    int
+	WebPort int
+	Name    string
 }
 
 type baseConfig struct {
-	LogPath string //日志存放路径.
+	LogPath string
 }
 
 var Conf *Config
@@ -52,7 +43,6 @@ func Load(cmd *cmd.Command) {
 	}
 
 	cf := &Config{
-		Db:   parseDbConfig(),
 		Node: parseNodeConfig(cmd),
 		Base: parseBaseConfig(),
 	}
@@ -62,81 +52,36 @@ func Load(cmd *cmd.Command) {
 
 //node.
 func parseNodeConfig(cmd *cmd.Command) *nodeConfig {
-	masterip := ini.GetString("node_ip")
-	if len(masterip) < 1 {
-		log.Println("node_ip 不能为空")
-		os.Exit(0)
-	}
-
-	masterport := ini.GetInt("node_port")
-	if masterport < 1 {
-		log.Println("node_port 不能为空")
-		os.Exit(0)
-	}
-
 	name := ini.GetString("node_name")
 	if len(name) < 1 {
 		log.Println("node_name 不能为空")
 		os.Exit(0)
 	}
 
-	nodeStoreAddr := ini.GetString("node_store_addr")
-	if len(name) < 1 {
-		log.Println("node_store_addr 不能为空")
+	storeip := ini.GetString("node_ip")
+	if len(storeip) < 1 {
+		log.Println("node_ip 不能为空")
 		os.Exit(0)
 	}
-	storeAddrs := strings.Split(nodeStoreAddr, ",")
+	storeport := ini.GetInt("node_port")
+	if storeport < 1 {
+		log.Println("node_port 不能为空")
+		os.Exit(0)
+	}
+	webport := ini.GetInt("node_web_port")
+	if webport < 1 {
+		log.Println("node_web_port 不能为空")
+		os.Exit(0)
+	}
 
 	nodeconf := &nodeConfig{
-		IP:         masterip,
-		Port:       masterport,
-		Name:       name,
-		StoreAddrs: storeAddrs,
+		IP:      storeip,
+		Port:    storeport,
+		WebPort: webport,
+		Name:    name,
 	}
 
 	return nodeconf
-}
-
-//db.
-func parseDbConfig() *dbConfig {
-	dbHost := ini.GetString("db_host")
-	if len(dbHost) < 1 {
-		log.Println("db_host 不能为空")
-		os.Exit(0)
-	}
-
-	dbUser := ini.GetString("db_user")
-	if len(dbUser) < 1 {
-		log.Println("db_user 不能为空")
-		os.Exit(0)
-	}
-
-	dbPort := ini.GetInt("db_port")
-	if dbPort < 1 {
-		log.Println("db_port 不能为空")
-		os.Exit(0)
-	}
-
-	dbName := ini.GetString("db_name")
-	if len(dbName) < 1 {
-		log.Println("db_name 不能为空")
-		os.Exit(0)
-	}
-
-	dbPwd := ini.GetString("db_pwd")
-	if len(dbPwd) < 1 {
-		log.Println("db_pwd 不能为空")
-		os.Exit(0)
-	}
-
-	dbconf := &dbConfig{
-		Host:     dbHost,
-		User:     dbUser,
-		Port:     dbPort,
-		Name:     dbName,
-		Password: dbPwd,
-	}
-	return dbconf
 }
 
 //parseBaseConfig 解析基础配置.

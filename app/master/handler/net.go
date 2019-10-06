@@ -1,194 +1,93 @@
 package handler
 
 import (
-	"io"
+	"fmt"
 	"log"
-	"math/rand"
 	"net"
-	"time"
+
+	"goss.io/goss/lib"
 
 	"goss.io/goss/lib/protocol"
 
 	"goss.io/goss/lib/packet"
 
-	"goss.io/goss/app/master/conf"
+	"goss.io/goss/lib/logd"
+
+	"goss.io/goss/lib/ini"
 )
 
-type TcpService struct {
+type MasterService struct {
 	conn map[string]net.Conn
+	port string
 }
 
-//NewTcpService .
-func NewTcpService() *TcpService {
-	return &TcpService{
-		conn: make(map[string]net.Conn),
+//NewMaster .
+func NewMaster() *MasterService {
+	return &MasterService{
+		port: fmt.Sprintf(":%d", ini.GetInt("node_port")),
 	}
 }
 
-//Start .
-func (this *TcpService) Start() {
-	cf := conf.Conf.Node
-	for _, addr := range cf.StoreAddrs {
-		go this.connStoreNode(addr)
-	}
+//Start.
+func (this *MasterService) Start() {
+	go NewAdmin()
+	this.listen()
+	select {}
 }
 
-//connStoreNode 连接存储节点.
-func (this *TcpService) connStoreNode(addr string) {
+//listen .
+func (this *MasterService) listen() {
+	listener, err := net.Listen("tcp4", this.port)
+	if err != nil {
+		log.Panicln(err)
+	}
+
+	defer listener.Close()
 	for {
-		log.Println("开始连接:", addr)
-		conn, err := this.connection(addr)
+		conn, err := listener.Accept()
 		if err != nil {
-			log.Printf("%s:节点连接失败, 尝试重新连接!%+v\n", addr, err)
-			time.Sleep(time.Second * 1)
-			continue
+			logd.Make(logd.Level_WARNING, logd.GetLogpath(), err.Error())
+			return
+		}
+		ip := conn.RemoteAddr().String()
+		logd.Make(logd.Level_INFO, logd.GetLogpath(), "收到来自:"+ip+"的连接请求")
+		go this.handler(conn)
+	}
+}
+
+//handler .
+func (this *MasterService) handler(conn net.Conn) {
+	defer conn.Close()
+	for {
+		pkt, err := packet.ParseNode(conn)
+		if err != nil {
+			logd.Make(logd.Level_WARNING, logd.GetLogpath(), err.Error())
+			return
 		}
 
-		this.conn[addr] = conn
-		log.Println(addr, "连接成功!")
-		return
-	}
-}
+		//判断协议.
+		if pkt.Protocol == protocol.NodeAddProtocol {
+			//新增节点信息.
+			info := Node{
+				Types:    pkt.Types,
+				IP:       pkt.IP,
+				CreateAt: lib.Time(),
+			}
+			NodeInfo = append(NodeInfo, info)
 
-func (this *TcpService) connection(addr string) (conn net.Conn, err error) {
-	conn, err = net.Dial("tcp4", addr)
-	if err != nil {
-		return conn, err
-	}
-	return conn, nil
-}
+			//新节点上线通知对应的节点.
+			if len(info.Types) == len(packet.NodeTypes_Store) {
+				//通知master节点.
+				masterList := GetMasterList()
+				log.Printf("masterList:%+v\n", masterList)
+			}
 
-//SelectNode 选择一个存储节点.
-func (this *TcpService) SelectNode() (nodeip string, conn net.Conn) {
-	rand.Seed(time.Now().UnixNano())
-	index := rand.Int() % len(conf.Conf.Node.StoreAddrs)
-	addr := conf.Conf.Node.StoreAddrs[index]
-	log.Println("选择的节点为:", addr)
-	return addr, this.conn[addr]
-}
+			if info.Types == packet.NodeTypes_Master {
+				//告知新上线的master节点多有的store节点ip.
+				storeList := GetStoreList()
 
-//Write tcp 发送消息.
-func (this *TcpService) Write(b []byte) (msg []byte, nodeip string, err error) {
-	nodeip, conn := this.SelectNode()
-	_, err = conn.Write(b)
-	if err != nil {
-		log.Printf("%+v\n", err)
-		return msg, nodeip, err
-	}
-
-	for {
-		var buf = make([]byte, 1024)
-		_, err = conn.Read(buf)
-		if err != nil {
-			log.Printf("%+v\n", err)
-			return msg, nodeip, err
+				log.Printf("storeList:%+v\n", storeList)
+			}
 		}
-
-		return buf, nodeip, nil
 	}
 }
-
-//Read tcp读取文件.
-func (this *TcpService) Read(nodeip, fHash string, bodylen int64) (boby []byte, err error) {
-	conn, err := net.Dial("tcp4", nodeip)
-	if err != nil {
-		log.Printf("%+v\n", err)
-		return boby, err
-	}
-
-	pkt := packet.New(nil, []byte(fHash), protocol.ReadFileProrocol)
-	_, err = conn.Write(pkt)
-	if err != nil {
-		log.Printf("%+v\n", err)
-		return boby, err
-	}
-
-	for {
-		var buf = make([]byte, bodylen)
-		_, err = io.ReadFull(conn, buf)
-		if err != nil {
-			log.Printf("%+v\n", err)
-			return boby, err
-		}
-		return buf, nil
-	}
-}
-
-// var Buf = make(chan []byte, 1024*100)
-
-// const HEADER_LEN = 4
-// const HASH_LEN = 32
-
-// type Network struct {
-// }
-
-//NewServie .
-// func NewServie() {
-// 	// srv := &Network{}
-// 	// srv.start()
-// }
-
-// func (n *Network) start() {
-// 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", conf.Conf.Node.Port))
-// 	if err != nil {
-// 		log.Panicf("%+v\n", err)
-// 	}
-// 	cf := conf.Conf.Node
-// 	msg := fmt.Sprintf("%s(%s:9001) 启动成功!", cf.Name, cf.IP)
-// 	println(msg)
-
-// 	for {
-// 		conn, err := listener.Accept()
-// 		if err != nil {
-// 			log.Printf("%+v\n", err)
-// 			return
-// 		}
-
-// 		log.Println(conn.RemoteAddr().String())
-// 		go n.handler(conn)
-// 	}
-// }
-
-// func (n *Network) handler(conn net.Conn) {
-// 	for {
-// 		select {
-// 		case buf := <-Buf:
-// 			msg := fmt.Sprintf("文件已发送给存储节点:%d", len(buf))
-// 			h := MD5(buf)
-// 			buf = packet(buf, []byte(h))
-// 			_, err := conn.Write(buf)
-// 			if err != nil {
-// 				ip := conn.RemoteAddr().String()
-// 				log.Printf("%+v\n", err)
-// 				log.Println(ip, "节点断开连接")
-// 				return
-// 			}
-
-// 			log.Println(msg)
-
-// 			buf = make([]byte, 1024)
-// 			_, err = conn.Read(buf)
-// 			if err != nil {
-// 				log.Printf("%+v\n", err)
-// 				return
-// 			}
-// 			log.Println(string(buf))
-// 		}
-// 	}
-// }
-
-// func packet(content, fileHash []byte) []byte {
-// 	buffer := make([]byte, HEADER_LEN+len(content)+len(fileHash))
-// 	// 将buffer前面四个字节设置为包长度，大端序
-// 	binary.BigEndian.PutUint32(buffer[0:4], uint32(len(content)))
-// 	copy(buffer[4:36], fileHash)
-// 	copy(buffer[36:], content)
-// 	return buffer
-// }
-
-// func MD5(body []byte) string {
-// 	h := md5.New()
-// 	h.Write(body)
-// 	b := h.Sum(nil)
-// 	return hex.EncodeToString(b)
-// }

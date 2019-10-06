@@ -4,8 +4,7 @@ import (
 	"log"
 
 	"goss.io/goss/app/master/conf"
-	"goss.io/goss/app/master/node"
-	"goss.io/goss/db"
+	"goss.io/goss/app/master/handler"
 	"goss.io/goss/lib/cmd"
 )
 
@@ -16,10 +15,6 @@ func main() {
 	conf.Load(cmd)
 	log.Println("node name:", conf.Conf.Node.Name)
 
-	if err := db.Connection(); err != nil {
-		log.Panicln(err)
-	}
-
-	master := node.NewMaster()
+	master := handler.NewMaster()
 	master.Start()
 }

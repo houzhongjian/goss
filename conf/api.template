@@ -6,7 +6,7 @@ db_pwd = 123
 db_port = 5432
 
 #节点配置
-node_name=master_node_1
+node_name=api_node_1
 node_ip = 127.0.0.1
 node_port = 80
 
