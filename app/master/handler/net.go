@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net"
 
@@ -16,15 +17,21 @@ import (
 	"goss.io/goss/lib/ini"
 )
 
+type NodeParams struct {
+	Conn  net.Conn
+	Types packet.NodeTypes
+}
+
 type MasterService struct {
-	conn map[string]net.Conn
-	port string
+	Conn map[string]NodeParams
+	Port string
 }
 
 //NewMaster .
 func NewMaster() *MasterService {
 	return &MasterService{
-		port: fmt.Sprintf(":%d", ini.GetInt("node_port")),
+		Conn: make(map[string]NodeParams),
+		Port: fmt.Sprintf(":%d", ini.GetInt("node_port")),
 	}
 }
 
@@ -37,7 +44,7 @@ func (this *MasterService) Start() {
 
 //listen .
 func (this *MasterService) listen() {
-	listener, err := net.Listen("tcp4", this.port)
+	listener, err := net.Listen("tcp4", this.Port)
 	if err != nil {
 		log.Panicln(err)
 	}
@@ -60,10 +67,10 @@ func (this *MasterService) handler(ip string, conn net.Conn) {
 	defer conn.Close()
 	for {
 		pkt, err := packet.ParseNode(conn)
-		if err != nil {
+		if err != nil && err == io.EOF {
 			logd.Make(logd.Level_WARNING, logd.GetLogpath(), ip+"断开连接")
 			//从节点列表中移除.
-			RemoveNode(ip)
+			RemoveNode(this, ip)
 			return
 		}
 
@@ -78,10 +85,26 @@ func (this *MasterService) handler(ip string, conn net.Conn) {
 			}
 			NodeInfo = append(NodeInfo, info)
 
+			//记录节点信息.
+			this.Conn[pkt.IP] = NodeParams{
+				Conn:  conn,
+				Types: pkt.Types,
+			}
+
 			//新节点上线通知对应的节点.
 			if info.Types == packet.NodeTypes_Storage {
 				//通知api节点.
 				apiList := GetApiList()
+				for _, sourceIP := range apiList {
+					log.Println("apiSrv:", sourceIP)
+					pkt := packet.NewNode(packet.NodeTypes_Storage, pkt.IP, protocol.NodeAddProtocol)
+					_, err = this.Conn[sourceIP].Conn.Write(pkt)
+					if err != nil {
+						logd.Make(logd.Level_WARNING, logd.GetLogpath(), "通知api节点:"+sourceIP+"新增storage节点失败，稍后重新通知")
+						RemoveNode(this, ip)
+						return
+					}
+				}
 				log.Printf("apiList:%+v\n", apiList)
 			}
 

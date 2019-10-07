@@ -3,7 +3,6 @@ package conf
 import (
 	"log"
 	"os"
-	"strings"
 
 	"goss.io/goss/lib"
 	"goss.io/goss/lib/cmd"
@@ -25,10 +24,10 @@ type dbConfig struct {
 }
 
 type nodeConfig struct {
-	IP         string
-	Port       int
-	Name       string
-	StoreAddrs []string
+	IP   string
+	Port int
+	Name string
+	// StoreAddrs []string
 }
 
 type baseConfig struct {
@@ -80,18 +79,18 @@ func parseNodeConfig(cmd *cmd.Command) *nodeConfig {
 		os.Exit(0)
 	}
 
-	nodeStoreAddr := ini.GetString("node_store_addr")
-	if len(name) < 1 {
-		log.Println("node_store_addr 不能为空")
-		os.Exit(0)
-	}
-	storeAddrs := strings.Split(nodeStoreAddr, ",")
+	// nodeStoreAddr := ini.GetString("node_store_addr")
+	// if len(name) < 1 {
+	// 	log.Println("node_store_addr 不能为空")
+	// 	os.Exit(0)
+	// }
+	// storeAddrs := strings.Split(nodeStoreAddr, ",")
 
 	nodeconf := &nodeConfig{
-		IP:         masterip,
-		Port:       masterport,
-		Name:       name,
-		StoreAddrs: storeAddrs,
+		IP:   masterip,
+		Port: masterport,
+		Name: name,
+		// StoreAddrs: storeAddrs,
 	}
 
 	return nodeconf

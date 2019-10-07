@@ -13,12 +13,14 @@ import (
 func (this *StorageService) connMaster() {
 	//上报节点信息
 	conn := this.conn(this.MasterNode)
+	logd.Make(logd.Level_INFO, logd.GetLogpath(), "master节点连接成功，准备开始上报节点信息")
 	pkt := packet.NewNode(packet.NodeTypes_Storage, this.Addr, protocol.NodeAddProtocol)
 	_, err := conn.Write(pkt)
 	if err != nil {
 		this.connMaster()
 		return
 	}
+	logd.Make(logd.Level_INFO, logd.GetLogpath(), "上报节点信息成功")
 
 	for {
 		var buf = make([]byte, 1024)

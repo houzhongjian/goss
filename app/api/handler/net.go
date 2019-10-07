@@ -10,8 +10,6 @@ import (
 	"goss.io/goss/lib/protocol"
 
 	"goss.io/goss/lib/packet"
-
-	"goss.io/goss/app/api/conf"
 )
 
 type TcpService struct {
@@ -26,15 +24,12 @@ func NewTcpService() *TcpService {
 }
 
 //Start .
-func (this *TcpService) Start() {
-	cf := conf.Conf.Node
-	for _, addr := range cf.StoreAddrs {
-		go this.connStoreNode(addr)
-	}
+func (this *TcpService) Start(addr string) {
+	go this.connStorageNode(addr)
 }
 
-//connStoreNode 连接存储节点.
-func (this *TcpService) connStoreNode(addr string) {
+//connStorageNode 连接存储节点.
+func (this *TcpService) connStorageNode(addr string) {
 	for {
 		log.Println("开始连接:", addr)
 		conn, err := this.connection(addr)
@@ -61,8 +56,12 @@ func (this *TcpService) connection(addr string) (conn net.Conn, err error) {
 //SelectNode 选择一个存储节点.
 func (this *TcpService) SelectNode() (nodeip string, conn net.Conn) {
 	rand.Seed(time.Now().UnixNano())
-	index := rand.Int() % len(conf.Conf.Node.StoreAddrs)
-	addr := conf.Conf.Node.StoreAddrs[index]
+	index := rand.Int() % len(this.conn)
+	list := []string{}
+	for k, _ := range this.conn {
+		list = append(list, k)
+	}
+	addr := list[index]
 	log.Println("选择的节点为:", addr)
 	return addr, this.conn[addr]
 }
