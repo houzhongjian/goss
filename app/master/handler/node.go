@@ -45,11 +45,8 @@ func RemoveNode(this *MasterService, ip string) {
 	for index, v := range NodeInfo {
 		if v.IP == ip {
 			//通知对应的节点与故障节点断开连接.
-			apiList := GetApiList()
-			for _, apinodeIp := range apiList {
-				pkt := packet.NewNode(packet.NodeTypes_Api, v.SourceIP, protocol.NodelDelProtocol)
-				this.Conn[apinodeIp].Conn.Write(pkt)
-			}
+			pkt := packet.NewNode(packet.NodeTypes_Api, v.SourceIP, protocol.NodelDelProtocol)
+			this.Conn[v.SourceIP].Conn.Write(pkt)
 
 			//从NodeInfo中移除当前.
 			NodeInfo = append(NodeInfo[:index], NodeInfo[index+1:]...)

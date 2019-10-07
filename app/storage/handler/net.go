@@ -52,7 +52,7 @@ func (this *StorageService) checkStoragePath() {
 func (this *StorageService) listen() {
 	listener, err := net.Listen("tcp4", this.Port)
 	if err != nil {
-		log.Printf("%s 端口监听失败!%+v\n", err)
+		log.Printf("端口监听失败!%+v\n", err)
 		return
 	}
 

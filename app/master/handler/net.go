@@ -111,7 +111,15 @@ func (this *MasterService) handler(ip string, conn net.Conn) {
 			if info.Types == packet.NodeTypes_Api {
 				//告知新上线的api节点多有的storage节点ip.
 				storageList := GetStorageList()
-
+				for _, storageIP := range storageList {
+					pktMsg := packet.NewNode(packet.NodeTypes_Api, storageIP, protocol.NodeAddProtocol)
+					_, err = this.Conn[pkt.IP].Conn.Write(pktMsg)
+					if err != nil {
+						logd.Make(logd.Level_WARNING, logd.GetLogpath(), "通知api节点:"+storageIP+"storage节点失败，稍后重新通知")
+						RemoveNode(this, ip)
+						return
+					}
+				}
 				log.Printf("storageList:%+v\n", storageList)
 			}
 		}
