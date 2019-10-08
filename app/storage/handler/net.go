@@ -2,10 +2,13 @@ package handler
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net"
 	"os"
+
+	"goss.io/goss/lib/logd"
 
 	"goss.io/goss/lib/ini"
 
@@ -58,21 +61,22 @@ func (this *StorageService) listen() {
 
 	for {
 		conn, err := listener.Accept()
-		if err != nil {
-			log.Printf("%+v\n", err)
+		if err != nil && err == io.EOF {
+			logd.Make(logd.Level_WARNING, logd.GetLogpath(), "断开连接")
 			return
 		}
 
-		go this.handler(conn)
+		ip := conn.RemoteAddr().String()
+		go this.handler(conn, ip)
 	}
 }
 
-func (this *StorageService) handler(conn net.Conn) {
+func (this *StorageService) handler(conn net.Conn, ip string) {
 	defer conn.Close()
 	for {
 		pkt, err := packet.Parse(conn)
-		if err != nil {
-			log.Printf("%+v\n", err)
+		if err != nil && err == io.EOF {
+			logd.Make(logd.Level_WARNING, logd.GetLogpath(), ip+"断开连接")
 			return
 		}
 
@@ -81,9 +85,8 @@ func (this *StorageService) handler(conn net.Conn) {
 			//计算文件hash.
 			fHash := lib.FileHash(pkt.Body)
 			//验证文件是否损坏.
-			log.Println("计算的hash为:", fHash)
 			if fHash != pkt.Hash {
-				log.Println("文件不一致")
+				logd.Make(logd.Level_WARNING, logd.GetLogpath(), "文件hash不一致")
 				conn.Write([]byte("fail"))
 				return
 			}
@@ -91,31 +94,27 @@ func (this *StorageService) handler(conn net.Conn) {
 			fPath := conf.Conf.Node.StorageRoot + fHash
 			err = ioutil.WriteFile(fPath, pkt.Body, 0777)
 			if err != nil {
-				log.Printf("%+v\n", err)
+				logd.Make(logd.Level_WARNING, logd.GetLogpath(), "创建文件失败"+err.Error())
 				return
 			}
 			conn.Write([]byte(fHash))
 		}
 
 		if pkt.Protocol == protocol.ReadFileProrocol {
-			log.Println("读取文件：", pkt.Hash)
 			//读取文件.
 			fpath := conf.Conf.Node.StorageRoot + pkt.Hash
 			b, err := ioutil.ReadFile(fpath)
 			if err != nil {
-				log.Printf("%+v\n", err)
+				logd.Make(logd.Level_WARNING, logd.GetLogpath(), "读取文件失败:"+err.Error())
 				return
 			}
-
-			log.Println("文件大小为:", len(b))
-
 			_, err = conn.Write(b)
-			if err != nil {
-				log.Printf("%+v\n", err)
+			if err != nil && err == io.EOF {
+				logd.Make(logd.Level_WARNING, logd.GetLogpath(), "文件发送失败:"+err.Error())
 				return
 			}
 
-			log.Println("发送成功!")
+			logd.Make(logd.Level_INFO, logd.GetLogpath(), "文件发成功")
 		}
 	}
 }

@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"log"
 	"net"
 
 	"goss.io/goss/lib/logd"
@@ -42,7 +41,6 @@ func Parse(conn net.Conn) (pkt Packet, err error) {
 	var num = make([]byte, PROROCOL_LEN)
 	_, err = io.ReadFull(conn, num)
 	if err != nil {
-		log.Printf("%+v\n", err)
 		return pkt, err
 	}
 	pkt.Protocol = protocol.GossProtocol(int(binary.BigEndian.Uint32(num)))
@@ -51,7 +49,6 @@ func Parse(conn net.Conn) (pkt Packet, err error) {
 	var header = make([]byte, HEADER_LEN)
 	_, err = io.ReadFull(conn, header)
 	if err != nil {
-		log.Printf("%+v\n", err)
 		return pkt, err
 	}
 	pkt.Size = int64(binary.BigEndian.Uint32(header))
@@ -61,7 +58,6 @@ func Parse(conn net.Conn) (pkt Packet, err error) {
 	var fhash = make([]byte, HASH_LEN)
 	_, err = io.ReadFull(conn, fhash)
 	if err != nil {
-		log.Printf("%+v\n", err)
 		return pkt, err
 	}
 	pkt.Hash = string(fhash)
@@ -71,7 +67,6 @@ func Parse(conn net.Conn) (pkt Packet, err error) {
 	var buf = make([]byte, pkt.Size)
 	_, err = io.ReadFull(conn, buf)
 	if err != nil {
-		log.Printf("%+v\n", err)
 		return pkt, err
 	}
 	pkt.Body = buf

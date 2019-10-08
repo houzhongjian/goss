@@ -41,7 +41,6 @@ func NewApi() *ApiService {
 
 //Start .
 func (this *ApiService) Start() {
-	// go this.Tcp.Start()
 	go this.connMaster()
 	this.httpSrv()
 }
