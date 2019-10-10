@@ -26,6 +26,7 @@ func (this *AdminService) Start() {
 	r := gin.Default()
 	r.Static("/img", "./admin/static/img/")
 	r.Static("/css", "./admin/static/css/")
+	r.Static("/vendor", "./admin/static/vendor/")
 	r.LoadHTMLGlob("./admin/views/*")
 
 	r.GET("/console", this.handleConsole)
@@ -42,5 +43,6 @@ func (this *AdminService) handleConsole(c *gin.Context) {
 
 	//获取所有的存储节点.
 	storageList := GetStorageList()
+
 	c.HTML(http.StatusOK, "console.html", map[string]interface{}{"apiList": apiList, "storageList": storageList})
 }

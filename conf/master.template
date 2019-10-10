@@ -6,3 +6,4 @@ node_web_port=8080
 
 #基础配置
 log_path = ../log/
+token = 202cb962ac59075b964b07152d234b70

@@ -24,9 +24,10 @@ type dbConfig struct {
 }
 
 type nodeConfig struct {
-	IP   string
-	Port int
-	Name string
+	IP    string
+	Port  int
+	Name  string
+	Token string
 	// StoreAddrs []string
 }
 
@@ -79,17 +80,18 @@ func parseNodeConfig(cmd *cmd.Command) *nodeConfig {
 		os.Exit(0)
 	}
 
-	// nodeStoreAddr := ini.GetString("node_store_addr")
-	// if len(name) < 1 {
-	// 	log.Println("node_store_addr 不能为空")
-	// 	os.Exit(0)
-	// }
+	token := ini.GetString("token")
+	if len(token) < 1 {
+		log.Println("token 不能为空")
+		os.Exit(0)
+	}
 	// storeAddrs := strings.Split(nodeStoreAddr, ",")
 
 	nodeconf := &nodeConfig{
-		IP:   masterip,
-		Port: masterport,
-		Name: name,
+		IP:    masterip,
+		Port:  masterport,
+		Name:  name,
+		Token: token,
 		// StoreAddrs: storeAddrs,
 	}
 

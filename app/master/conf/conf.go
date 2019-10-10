@@ -20,6 +20,7 @@ type nodeConfig struct {
 	Port    int
 	WebPort int
 	Name    string
+	Token   string
 }
 
 type baseConfig struct {
@@ -73,12 +74,18 @@ func parseNodeConfig(cmd *cmd.Command) *nodeConfig {
 		log.Println("node_web_port 不能为空")
 		os.Exit(0)
 	}
+	token := ini.GetString("token")
+	if len(token) < 1 {
+		log.Println("token 不能为空")
+		os.Exit(0)
+	}
 
 	nodeconf := &nodeConfig{
 		IP:      storeip,
 		Port:    storeport,
 		WebPort: webport,
 		Name:    name,
+		Token:   token,
 	}
 
 	return nodeconf

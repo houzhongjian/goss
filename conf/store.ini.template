@@ -7,3 +7,4 @@ node_port = 9001
 #基础配置
 storage_root=/disk/storage/
 log_path = ../log/
+token = 202cb962ac59075b964b07152d234b70

@@ -1,9 +1,16 @@
 package handler
 
 import (
+	"encoding/json"
+	"errors"
 	"io"
 	"net"
 	"time"
+
+	"goss.io/goss/lib"
+	"goss.io/goss/lib/hardware"
+
+	"goss.io/goss/lib/ini"
 
 	"goss.io/goss/lib/protocol"
 
@@ -15,35 +22,33 @@ import (
 //connMaster .
 func (this *ApiService) connMaster() {
 	conn := this.conn(this.MasterNode)
-	logd.Make(logd.Level_INFO, logd.GetLogpath(), "master节点连接成功，准备开始上报节点信息")
-	pkt := packet.NewNode(packet.NodeTypes_Api, this.Addr, protocol.NodeAddProtocol)
-	_, err := conn.Write(pkt)
-	if err != nil {
+	//连接初始化
+	if err := this.connInit(conn); err != nil {
+		logd.Make(logd.Level_WARNING, logd.GetLogpath(), err.Error())
 		this.connMaster()
 		return
 	}
-	logd.Make(logd.Level_INFO, logd.GetLogpath(), "上报节点信息成功")
 
 	for {
-		pkt, err := packet.ParseNode(conn)
+		pkt, err := packet.Parse(conn)
 		if err != nil && err == io.EOF {
 			logd.Make(logd.Level_WARNING, logd.GetLogpath(), "master节点断开连接，稍后重新连接master节点")
 			this.connMaster()
 			return
 		}
-
+		ip := string(pkt.Body)
 		//判断协议类型.
 		if pkt.Protocol == protocol.NodeAddProtocol {
 			//新增节点.
-			logd.Make(logd.Level_INFO, logd.GetLogpath(), "新增存储节点:"+pkt.IP)
-			this.Tcp.Start(pkt.IP)
+			logd.Make(logd.Level_INFO, logd.GetLogpath(), "新增存储节点:"+ip)
+			this.Tcp.Start(ip)
 		}
 
-		if pkt.Protocol == protocol.NodelDelProtocol {
+		if pkt.Protocol == protocol.RemoveNodeProtocol {
 			//删除节点.
-			logd.Make(logd.Level_INFO, logd.GetLogpath(), "收到master节点要求与:"+pkt.IP+"节点断开的消息")
-			if err := this.Tcp.conn[pkt.IP].Close(); err != nil {
-				logd.Make(logd.Level_INFO, logd.GetLogpath(), "断开与:"+pkt.IP+"节点的连接失败")
+			logd.Make(logd.Level_INFO, logd.GetLogpath(), "收到master节点要求与:"+ip+"节点断开的消息")
+			if err := this.Tcp.conn[ip].Close(); err != nil {
+				logd.Make(logd.Level_INFO, logd.GetLogpath(), "断开与:"+ip+"节点的连接失败")
 				return
 			}
 			logd.Make(logd.Level_INFO, logd.GetLogpath(), "断开成功")
@@ -61,4 +66,75 @@ func (this *ApiService) conn(node string) net.Conn {
 	}
 
 	return conn
+}
+
+//connInit 连接初始化.
+func (this *ApiService) connInit(conn net.Conn) error {
+	//向主节点发送授权信息.
+	if err := this.sendAuth(conn); err != nil {
+		return err
+	}
+
+	//发送节点信息.
+	if err := this.sendNodeInfo(conn); err != nil {
+		return err
+	}
+	return nil
+}
+
+//auth 发送授权信息.
+func (this *ApiService) sendAuth(conn net.Conn) error {
+	tokenBuf := []byte(ini.GetString("token"))
+	buf := packet.New(tokenBuf, tokenBuf, protocol.ConnAuthProtocol)
+	_, err := conn.Write(buf)
+	if err != nil {
+		return errors.New("授权信息发送失败")
+	}
+
+	pkt, err := packet.Parse(conn)
+	if err != nil {
+		return errors.New("授权失败")
+	}
+
+	if string(pkt.Body) == "fail" {
+		return errors.New("授权信息验证失败")
+	}
+
+	return nil
+}
+
+//sendNodeInfo 上报节点信息.
+func (this *ApiService) sendNodeInfo(conn net.Conn) error {
+	h := hardware.New()
+	nodeInfo := protocol.NodeInfo{
+		Types:    string(packet.NodeTypes_Api),
+		CpuNum:   h.Cpu.Num,
+		MemSize:  h.Mem.Total,
+		SourceIP: this.Addr,
+		Name:     ini.GetString("node_name"),
+	}
+
+	content, err := json.Marshal(nodeInfo)
+	if err != nil {
+		return err
+	}
+
+	hashBuf := lib.Hash(string(content))
+	buf := packet.New(content, hashBuf, protocol.ReportNodeInfoProtocol)
+	_, err = conn.Write(buf)
+	if err != nil {
+		return err
+	}
+
+	pkt, err := packet.Parse(conn)
+	if err != nil {
+		return err
+	}
+
+	if string(pkt.Body) == "fail" {
+		return errors.New("发送节点信息失败")
+	}
+
+	logd.Make(logd.Level_INFO, logd.GetLogpath(), "上报节点信息成功")
+	return nil
 }

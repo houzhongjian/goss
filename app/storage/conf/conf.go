@@ -21,6 +21,7 @@ type nodeConfig struct {
 	Name        string
 	StorageRoot string
 	MasterNode  string
+	Token       string
 }
 
 type baseConfig struct {
@@ -80,6 +81,11 @@ func parseNodeConfig(cmd *cmd.Command) *nodeConfig {
 		log.Println("master_node 不能为空")
 		os.Exit(0)
 	}
+	token := ini.GetString("token")
+	if len(token) < 1 {
+		log.Println("token 不能为空")
+		os.Exit(0)
+	}
 
 	nodeconf := &nodeConfig{
 		IP:          storageip,
@@ -87,6 +93,7 @@ func parseNodeConfig(cmd *cmd.Command) *nodeConfig {
 		Name:        name,
 		StorageRoot: storageRoot,
 		MasterNode:  masterNode,
+		Token:       token,
 	}
 
 	return nodeconf

@@ -13,3 +13,4 @@ node_port = 80
 #基础配置
 log_path = ../log/
 master_node=127.0.0.1:8000
+token = 202cb962ac59075b964b07152d234b70
