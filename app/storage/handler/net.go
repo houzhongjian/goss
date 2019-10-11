@@ -81,7 +81,7 @@ func (this *StorageService) handler(conn net.Conn, ip string) {
 		}
 
 		//判断协议号.
-		if pkt.Protocol == protocol.WriteFileProrocol {
+		if pkt.Protocol == protocol.SEND_FILE {
 			//计算文件hash.
 			fHash := lib.FileHash(pkt.Body)
 			//验证文件是否损坏.
@@ -100,7 +100,7 @@ func (this *StorageService) handler(conn net.Conn, ip string) {
 			conn.Write([]byte(fHash))
 		}
 
-		if pkt.Protocol == protocol.ReadFileProrocol {
+		if pkt.Protocol == protocol.READ_FILE {
 			//读取文件.
 			fpath := conf.Conf.Node.StorageRoot + pkt.Hash
 			b, err := ioutil.ReadFile(fpath)

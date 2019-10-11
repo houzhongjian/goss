@@ -6,7 +6,6 @@ import (
 	"os"
 	"runtime"
 	"time"
-
 	"goss.io/goss/lib"
 	"goss.io/goss/lib/ini"
 )
@@ -26,8 +25,8 @@ func Make(level LogLevel, logpath string, msg interface{}) {
 }
 
 func makelog(level LogLevel, logpath string, msg interface{}) {
-	hostname, _ := os.Hostname()
-	content := fmt.Sprintf("%s %s:[%s] %s [%v]\n", lib.Time(), hostname, level, logpath, msg)
+	nodename := ini.GetString("node_name")
+	content := fmt.Sprintf("%s %s:[%s] %s [%v]\n", lib.Time(), nodename, level, logpath, msg)
 
 	logFile := logFile()
 	f, err := os.OpenFile(logFile, os.O_CREATE|os.O_APPEND|os.O_RDONLY|os.O_WRONLY, 0777)

@@ -1,3 +1,4 @@
 bin/*
 conf/*.ini
 log/
+.idea

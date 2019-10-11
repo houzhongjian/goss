@@ -138,7 +138,7 @@ func (this *ApiService) put(w http.ResponseWriter, r *http.Request) {
 	ft := filetype.Parse(f16[:10])
 
 	fhash := lib.FileHash(fBody)
-	pkt := packet.New(fBody, []byte(fhash), protocol.WriteFileProrocol)
+	pkt := packet.New(fBody, []byte(fhash), protocol.SEND_FILE)
 	_, nodeip, err := this.Tcp.Write(pkt)
 	if err != nil {
 		log.Printf("%+v\n", err)

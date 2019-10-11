@@ -49,7 +49,7 @@ func RemoveNode(this *MasterService, ip string) {
 	for index, v := range GossNode {
 		if v.IP == ip {
 			//通知对应的节点与故障节点断开连接.
-			pkt := packet.New([]byte(v.SourceIP), lib.Hash(v.SourceIP), protocol.RemoveNodeProtocol)
+			pkt := packet.New([]byte(v.SourceIP), lib.Hash(v.SourceIP), protocol.REMOVE_NODE)
 			this.Conn[v.SourceIP].Write(pkt)
 
 			//从NodeInfo中移除当前.

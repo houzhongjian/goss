@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-
 	"goss.io/goss/lib/ini"
 )
 

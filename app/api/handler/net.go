@@ -7,9 +7,8 @@ import (
 	"net"
 	"time"
 
-	"goss.io/goss/lib/protocol"
-
 	"goss.io/goss/lib/packet"
+	"goss.io/goss/lib/protocol"
 )
 
 type TcpService struct {
@@ -55,6 +54,7 @@ func (this *TcpService) connection(addr string) (conn net.Conn, err error) {
 
 //SelectNode 选择一个存储节点.
 func (this *TcpService) SelectNode() (nodeip string, conn net.Conn) {
+	log.Printf("this.conn:%+v\n", this.conn, len(this.conn))
 	rand.Seed(time.Now().UnixNano())
 	index := rand.Int() % len(this.conn)
 	list := []string{}
@@ -95,7 +95,7 @@ func (this *TcpService) Read(nodeip, fHash string, bodylen int64) (boby []byte, 
 		return boby, err
 	}
 
-	pkt := packet.New(nil, []byte(fHash), protocol.ReadFileProrocol)
+	pkt := packet.New(nil, []byte(fHash), protocol.READ_FILE)
 	_, err = conn.Write(pkt)
 	if err != nil {
 		log.Printf("%+v\n", err)

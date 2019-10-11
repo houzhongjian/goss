@@ -70,7 +70,7 @@ func (this *StorageService) connInit(conn net.Conn) error {
 //auth 发送授权信息.
 func (this *StorageService) sendAuth(conn net.Conn) error {
 	tokenBuf := []byte(ini.GetString("token"))
-	buf := packet.New(tokenBuf, tokenBuf, protocol.ConnAuthProtocol)
+	buf := packet.New(tokenBuf, tokenBuf, protocol.CONN_AUTH)
 	_, err := conn.Write(buf)
 	if err != nil {
 		return errors.New("授权信息发送失败")
@@ -105,7 +105,7 @@ func (this *StorageService) sendNodeInfo(conn net.Conn) error {
 	}
 
 	hashBuf := lib.Hash(string(content))
-	buf := packet.New(content, hashBuf, protocol.ReportNodeInfoProtocol)
+	buf := packet.New(content, hashBuf, protocol.REPORT_NODE_INFO)
 	_, err = conn.Write(buf)
 	if err != nil {
 		return err
