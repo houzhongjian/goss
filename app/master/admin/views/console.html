@@ -30,7 +30,8 @@
                 </div><!-- /.navbar-collapse -->
             </div><!-- /.container-fluid -->
         </nav>
-        <div class="container-fluid" style="margin-top:51px;;">
+        <div class="container-fluid" style="margin-top:51px;">
+            <h2>api节点</h2>
             <div class="row">
                 <table class="table table-bordered">
                     <thead>
@@ -52,6 +53,37 @@
                             <td>
                                 <button type="button" class="btn btn-info btn-xs">日志</button>
                                 <button type="button" class="btn btn-warning btn-xs">监控</button>
+                                <button type="button" class="btn btn-danger btn-xs">下线</button>
+                            </td>
+                        </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+            </div>
+
+            <h2>存储节点</h2>
+            <div class="row">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>节点名称</th>
+                            <th>节点IP</th>
+                            <th>cpu数量</th>
+                            <th>内存大小</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{range .storageList}}
+                        <tr>
+                            <td>{{.Name}}</td>
+                            <td>{{.SourceIP}}</td>
+                            <td>{{.CpuNum}}</td>
+                            <td>{{.MemSize}}</td>
+                            <td>
+                                <button type="button" class="btn btn-info btn-xs">日志</button>
+                                <button type="button" class="btn btn-warning btn-xs">监控</button>
+                                <button type="button" class="btn btn-danger btn-xs">下线</button>
                             </td>
                         </tr>
                         {{end}}

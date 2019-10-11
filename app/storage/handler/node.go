@@ -1,9 +1,14 @@
 package handler
 
 import (
+	"encoding/json"
+	"errors"
 	"net"
 	"time"
 
+	"goss.io/goss/lib"
+	"goss.io/goss/lib/hardware"
+	"goss.io/goss/lib/ini"
 	"goss.io/goss/lib/logd"
 	"goss.io/goss/lib/packet"
 	"goss.io/goss/lib/protocol"
@@ -13,14 +18,21 @@ import (
 func (this *StorageService) connMaster() {
 	//上报节点信息
 	conn := this.conn(this.MasterNode)
-	logd.Make(logd.Level_INFO, logd.GetLogpath(), "master节点连接成功，准备开始上报节点信息")
-	pkt := packet.NewNode(packet.NodeTypes_Storage, this.Addr, protocol.NodeAddProtocol)
-	_, err := conn.Write(pkt)
-	if err != nil {
+
+	//连接初始化.
+	if err := this.connInit(conn); err != nil {
+		logd.Make(logd.Level_WARNING, logd.GetLogpath(), err.Error())
 		this.connMaster()
 		return
 	}
-	logd.Make(logd.Level_INFO, logd.GetLogpath(), "上报节点信息成功")
+	// logd.Make(logd.Level_INFO, logd.GetLogpath(), "master节点连接成功，准备开始上报节点信息")
+	// pkt := packet.NewNode(packet.NodeTypes_Storage, this.Addr, protocol.NodeAddProtocol)
+	// _, err := conn.Write(pkt)
+	// if err != nil {
+	// 	this.connMaster()
+	// 	return
+	// }
+	// logd.Make(logd.Level_INFO, logd.GetLogpath(), "上报节点信息成功")
 
 	for {
 		var buf = make([]byte, 1024)
@@ -41,4 +53,73 @@ func (this *StorageService) conn(node string) net.Conn {
 	}
 
 	return conn
+}
+
+//connInit 连接初始化.
+func (this *StorageService) connInit(conn net.Conn) error {
+	if err := this.sendAuth(conn); err != nil {
+		return err
+	}
+
+	if err := this.sendNodeInfo(conn); err != nil {
+		return err
+	}
+	return nil
+}
+
+//auth 发送授权信息.
+func (this *StorageService) sendAuth(conn net.Conn) error {
+	tokenBuf := []byte(ini.GetString("token"))
+	buf := packet.New(tokenBuf, tokenBuf, protocol.ConnAuthProtocol)
+	_, err := conn.Write(buf)
+	if err != nil {
+		return errors.New("授权信息发送失败")
+	}
+
+	pkt, err := packet.Parse(conn)
+	if err != nil {
+		return errors.New("授权失败")
+	}
+
+	if string(pkt.Body) == "fail" {
+		return errors.New("授权信息验证失败")
+	}
+
+	return nil
+}
+
+//sendNodeInfo 上报节点信息.
+func (this *StorageService) sendNodeInfo(conn net.Conn) error {
+	h := hardware.New()
+	nodeInfo := protocol.NodeInfo{
+		Types:    string(packet.NodeTypes_Storage),
+		CpuNum:   h.Cpu.Num,
+		MemSize:  h.Mem.Total,
+		SourceIP: this.Addr,
+		Name:     ini.GetString("node_name"),
+	}
+
+	content, err := json.Marshal(nodeInfo)
+	if err != nil {
+		return err
+	}
+
+	hashBuf := lib.Hash(string(content))
+	buf := packet.New(content, hashBuf, protocol.ReportNodeInfoProtocol)
+	_, err = conn.Write(buf)
+	if err != nil {
+		return err
+	}
+
+	pkt, err := packet.Parse(conn)
+	if err != nil {
+		return err
+	}
+
+	if string(pkt.Body) == "fail" {
+		return errors.New("发送节点信息失败")
+	}
+
+	logd.Make(logd.Level_INFO, logd.GetLogpath(), "上报节点信息成功")
+	return nil
 }
