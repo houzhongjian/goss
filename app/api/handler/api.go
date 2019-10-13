@@ -25,7 +25,10 @@ type ApiService struct {
 	Tcp        *TcpService
 	Addr       string
 	MasterNode string
+	// Backups chan
 }
+
+// type Backups
 
 //NewApi .
 func NewApi() *ApiService {
@@ -146,6 +149,13 @@ func (this *ApiService) put(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	//记录三条元数据，一条当前这条元数据可用, 其余两条元数据不可用.
+	//选择三个存储节点(节点不能相同).
+	nodeipList := this.Tcp.SelectNode(2, nodeip)
+	//开启事物操作，防止节点数据不一致.
+	tx := db.Db.Begin()
+	log.Printf("nodeipList:%+v\n", nodeipList)
+
 	//记录文件元数据.
 	metadata := db.Metadata{
 		Name:      name,
@@ -153,11 +163,38 @@ func (this *ApiService) put(w http.ResponseWriter, r *http.Request) {
 		Size:      int64(len(fBody)),
 		Hash:      fhash,
 		StoreNode: nodeip,
+		Usable:    true,
 	}
 
-	if err := metadata.Create(); err != nil {
+	if err = tx.Create(&metadata).Error; err != nil {
 		log.Printf("%+v\n", err)
 		w.Write([]byte("fail"))
+		tx.Rollback()
+		return
+	}
+
+	//记录需要异步拉取数据的节点元数据.
+	for _, ip := range nodeipList {
+		metadata = db.Metadata{
+			Name:      name,
+			Type:      ft,
+			Size:      int64(len(fBody)),
+			Hash:      fhash,
+			StoreNode: ip,
+			Usable:    false,
+		}
+		if err = tx.Create(&metadata).Error; err != nil {
+			log.Printf("%+v\n", err)
+			w.Write([]byte("fail"))
+			tx.Rollback()
+			return
+		}
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		log.Printf("%+v\n", err)
+		w.Write([]byte("fail"))
+		tx.Rollback()
 		return
 	}
 

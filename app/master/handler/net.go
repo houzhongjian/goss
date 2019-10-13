@@ -54,14 +54,14 @@ func (this *MasterService) listen() {
 		conn, err := listener.Accept()
 		if err != nil {
 			logd.Make(logd.Level_WARNING, logd.GetLogpath(), err.Error())
-			return
+			continue
 		}
 
 		//验证授权信息.
 		ip := conn.RemoteAddr().String()
 		if err := this.connInit(conn, ip); err != nil {
 			logd.Make(logd.Level_WARNING, logd.GetLogpath(), err.Error())
-			return
+			continue
 		}
 
 		logd.Make(logd.Level_INFO, logd.GetLogpath(), "收到来自:"+ip+"的连接请求")
@@ -75,7 +75,6 @@ func (this *MasterService) connInit(conn net.Conn, ip string) error {
 	if err := this.checkAuth(conn, ip); err != nil {
 		buf := packet.New([]byte("fail"), lib.Hash("fail"), protocol.MSG)
 		conn.Write(buf)
-		conn.Close()
 		return err
 	}
 	buf := packet.New([]byte("success"), lib.Hash("success"), protocol.MSG)
@@ -88,12 +87,6 @@ func (this *MasterService) connInit(conn net.Conn, ip string) error {
 	if err := this.parseNodeInfo(conn, ip); err != nil {
 		buf := packet.New([]byte("fail"), lib.Hash("fail"), protocol.MSG)
 		conn.Write(buf)
-		conn.Close()
-		return err
-	}
-	buf = packet.New([]byte("success"), lib.Hash("success"), protocol.MSG)
-	_, err = conn.Write(buf)
-	if err != nil {
 		return err
 	}
 	return nil
@@ -105,52 +98,64 @@ func (this *MasterService) parseNodeInfo(conn net.Conn, ip string) error {
 	if err != nil {
 		return err
 	}
-
-	n := protocol.NodeInfo{}
-	if err = json.Unmarshal(pkt.Body, &n); err != nil {
-		return err
-	}
-
-	node := Node{
-		Name:     n.Name,
-		SourceIP: n.SourceIP,
-		CpuNum:   n.CpuNum,
-		MemSize:  n.MemSize,
-		IP:       ip,
-		CreateAt: lib.Time(),
-		Types:    packet.NodeTypes(n.Types),
-	}
-
-	GossNode = append(GossNode, node)
-	this.Conn[node.SourceIP] = conn
-
-	//新存储节点上线,通知所有的api节点.
-	if node.Types == packet.NodeTypes_Storage {
-		//通知api节点.
-		apiList := GetApiList()
-		for _, v := range apiList {
-			pkt := packet.New([]byte(node.SourceIP), lib.Hash(node.SourceIP), protocol.ADD_NODE)
-			_, err = this.Conn[v.SourceIP].Write(pkt)
-			if err != nil {
-				logd.Make(logd.Level_WARNING, logd.GetLogpath(), "通知api节点:"+node.SourceIP+"新增storage节点失败，稍后重新通知")
-				RemoveNode(this, ip)
-				return err
-			}
-
-			logd.Make(logd.Level_INFO, logd.GetLogpath(), "通知api节点，新增存储节点:"+node.SourceIP+"成功")
+	//判读协议类型.
+	if pkt.Protocol == protocol.REPORT_NODE_INFO {
+		n := protocol.NodeInfo{}
+		if err = json.Unmarshal(pkt.Body, &n); err != nil {
+			return err
 		}
-	}
 
-	if node.Types == packet.NodeTypes_Api {
-		//告知新上线的api节点多有的storage节点ip.
-		storageList := GetStorageList()
-		for _, v := range storageList {
-			pktMsg := packet.New([]byte(v.SourceIP), lib.Hash(v.SourceIP), protocol.ADD_NODE)
-			_, err = this.Conn[v.SourceIP].Write(pktMsg)
-			if err != nil {
-				logd.Make(logd.Level_WARNING, logd.GetLogpath(), "通知api节点:"+v.SourceIP+"storage节点失败，稍后重新通知")
-				RemoveNode(this, ip)
-				return err
+		node := Node{
+			Name:     n.Name,
+			SourceIP: n.SourceIP,
+			CpuNum:   n.CpuNum,
+			MemSize:  n.MemSize,
+			IP:       ip,
+			CreateAt: lib.Time(),
+			Types:    packet.NodeTypes(n.Types),
+		}
+
+		GossNode = append(GossNode, node)
+		this.Conn[node.SourceIP] = conn
+
+		buf := packet.New([]byte("success"), lib.Hash("success"), protocol.MSG)
+		_, err = conn.Write(buf)
+		if err != nil {
+			return err
+		}
+
+		//新存储节点上线,通知所有的api节点.
+		if node.Types == packet.NodeTypes_Storage {
+			log.Println("node.SourceIP:", node.SourceIP)
+			//通知api节点.
+			apiList := GetApiList()
+			for _, v := range apiList {
+				pkt := packet.New([]byte(node.SourceIP), lib.Hash(node.SourceIP), protocol.ADD_NODE)
+				_, err = this.Conn[v.SourceIP].Write(pkt)
+				if err != nil {
+					logd.Make(logd.Level_WARNING, logd.GetLogpath(), "通知api节点:"+node.SourceIP+"新增storage节点失败，稍后重新通知")
+					RemoveNode(this, ip)
+					return err
+				}
+
+				logd.Make(logd.Level_INFO, logd.GetLogpath(), "通知api节点，新增存储节点:"+node.SourceIP+"成功")
+			}
+		}
+
+		if node.Types == packet.NodeTypes_Api {
+			//告知新上线的api节点多有的storage节点ip.
+			storageList := GetStorageList()
+			log.Printf("storageList:%+v len:%d\n", storageList, len(storageList))
+			for _, v := range storageList {
+				pktMsg := packet.New([]byte(v.SourceIP), lib.Hash(v.SourceIP), protocol.ADD_NODE)
+				_, err = this.Conn[node.SourceIP].Write(pktMsg)
+				if err != nil {
+					logd.Make(logd.Level_WARNING, logd.GetLogpath(), "通知api节点:"+v.SourceIP+"storage节点失败，稍后重新通知")
+					RemoveNode(this, ip)
+					return err
+				}
+
+				logd.Make(logd.Level_INFO, logd.GetLogpath(), "通知api节点，新增存储节点:"+v.SourceIP+"成功")
 			}
 		}
 	}

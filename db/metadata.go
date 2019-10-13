@@ -3,11 +3,12 @@ package db
 //Metadata 元数据.
 type Metadata struct {
 	Model
-	Name      string
+	Name      string `gorm:"index"`
 	Type      string
 	Size      int64
-	Hash      string
+	Hash      string `gorm:"index"`
 	StoreNode string
+	Usable    bool `gorm:"index"` //节点是否可用.
 }
 
 //TableName .

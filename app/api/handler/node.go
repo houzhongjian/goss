@@ -4,19 +4,16 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"net"
 	"time"
 
 	"goss.io/goss/lib"
 	"goss.io/goss/lib/hardware"
-
 	"goss.io/goss/lib/ini"
-
-	"goss.io/goss/lib/protocol"
-
-	"goss.io/goss/lib/packet"
-
 	"goss.io/goss/lib/logd"
+	"goss.io/goss/lib/packet"
+	"goss.io/goss/lib/protocol"
 )
 
 //connMaster .
@@ -36,15 +33,21 @@ func (this *ApiService) connMaster() {
 			this.connMaster()
 			return
 		}
-		ip := string(pkt.Body)
+		log.Printf("pkt:%+v\n", pkt)
+		log.Printf("pkt.body:%+v\n", string(pkt.Body))
+
 		//判断协议类型.
 		if pkt.Protocol == protocol.ADD_NODE {
+			ip := string(pkt.Body)
+			log.Println("ip:", ip)
 			//新增节点.
 			logd.Make(logd.Level_INFO, logd.GetLogpath(), "新增存储节点:"+ip)
 			this.Tcp.Start(ip)
 		}
 
 		if pkt.Protocol == protocol.REMOVE_NODE {
+			ip := string(pkt.Body)
+			log.Println("ip:", ip)
 			//删除节点.
 			logd.Make(logd.Level_INFO, logd.GetLogpath(), "收到master节点要求与:"+ip+"节点断开的消息")
 			if err := this.Tcp.conn[ip].Close(); err != nil {

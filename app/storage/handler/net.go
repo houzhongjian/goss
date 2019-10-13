@@ -67,6 +67,7 @@ func (this *StorageService) listen() {
 		}
 
 		ip := conn.RemoteAddr().String()
+		log.Println("api节点：" + ip + "连接")
 		go this.handler(conn, ip)
 	}
 }

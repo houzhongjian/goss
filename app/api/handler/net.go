@@ -7,6 +7,8 @@ import (
 	"net"
 	"time"
 
+	"goss.io/goss/lib"
+
 	"goss.io/goss/lib/packet"
 	"goss.io/goss/lib/protocol"
 )
@@ -52,23 +54,46 @@ func (this *TcpService) connection(addr string) (conn net.Conn, err error) {
 	return conn, nil
 }
 
-//SelectNode 选择一个存储节点.
-func (this *TcpService) SelectNode() (nodeip string, conn net.Conn) {
-	log.Printf("this.conn:%+v\n", this.conn, len(this.conn))
+//SelectStoreNode 选择存储节点.
+func (this *TcpService) SelectStoreNode() (nodeip string, conn net.Conn) {
+	nodeipList := this.SelectNode(1)
+	addr := nodeipList[0]
+	return addr, this.conn[addr]
+}
+
+//SelectNode 选择节点.
+//excludeipList 为排除的ip.
+func (this *TcpService) SelectNode(nodenum int, excludeipList ...string) []string {
 	rand.Seed(time.Now().UnixNano())
-	index := rand.Int() % len(this.conn)
 	list := []string{}
 	for k, _ := range this.conn {
 		list = append(list, k)
 	}
-	addr := list[index]
-	log.Println("选择的节点为:", addr)
-	return addr, this.conn[addr]
+
+	nodeipList := []string{}
+	num := 0
+	for {
+		if num >= nodenum {
+			break
+		}
+		index := rand.Int() % len(list)
+		addr := list[index]
+
+		//判读当前ip是否需要排除.
+		if lib.InArray(addr, excludeipList) {
+			continue
+		}
+		if !lib.InArray(addr, nodeipList) {
+			num++
+			nodeipList = append(nodeipList, addr)
+		}
+	}
+	return nodeipList
 }
 
 //Write tcp 发送消息.
 func (this *TcpService) Write(b []byte) (msg []byte, nodeip string, err error) {
-	nodeip, conn := this.SelectNode()
+	nodeip, conn := this.SelectStoreNode()
 	_, err = conn.Write(b)
 	if err != nil {
 		log.Printf("%+v\n", err)
