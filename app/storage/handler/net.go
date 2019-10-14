@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -23,6 +24,7 @@ type StorageService struct {
 	Port       string
 	Addr       string
 	MasterNode string
+	Auth       map[string]bool
 }
 
 func NewStorageService() *StorageService {
@@ -30,6 +32,7 @@ func NewStorageService() *StorageService {
 		Port:       fmt.Sprintf(":%d", conf.Conf.Node.Port),
 		Addr:       fmt.Sprintf("%s:%d", ini.GetString("node_ip"), ini.GetInt("node_port")),
 		MasterNode: ini.GetString("master_node"),
+		Auth:       make(map[string]bool),
 	}
 	return s
 }
@@ -67,9 +70,39 @@ func (this *StorageService) listen() {
 		}
 
 		ip := conn.RemoteAddr().String()
+		if err := this.checkAuth(conn, ip); err != nil {
+			logd.Make(logd.Level_WARNING, logd.GetLogpath(), err.Error())
+			return
+		}
 		log.Println("api节点：" + ip + "连接")
 		go this.handler(conn, ip)
 	}
+}
+
+//checkAuth .
+func (this *StorageService) checkAuth(conn net.Conn, ip string) error {
+	pkt, err := packet.Parse(conn)
+	if err != nil {
+		return err
+	}
+
+	//判读协议.
+	if pkt.Protocol != protocol.CONN_AUTH {
+		return errors.New("协议错误")
+	}
+
+	//验证授权信息是否正确.
+	if string(pkt.Body) != ini.GetString("token") {
+		return errors.New("授权失败")
+	}
+
+	buf := packet.New([]byte("success"), lib.Hash("success"), protocol.MSG)
+	_, err = conn.Write(buf)
+	if err != nil {
+		return err
+	}
+	this.Auth[ip] = true
+	return nil
 }
 
 func (this *StorageService) handler(conn net.Conn, ip string) {

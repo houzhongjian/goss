@@ -1,11 +1,16 @@
 package handler
 
 import (
+	"errors"
 	"io"
 	"log"
 	"math/rand"
 	"net"
 	"time"
+
+	"goss.io/goss/lib/logd"
+
+	"goss.io/goss/lib/ini"
 
 	"goss.io/goss/lib"
 
@@ -31,32 +36,54 @@ func (this *TcpService) Start(addr string) {
 
 //connStorageNode 连接存储节点.
 func (this *TcpService) connStorageNode(addr string) {
-	for {
-		//判断当前节点是否已经连接.
-		_, ok := this.conn[addr]
-		if ok {
-			return
-		}
-		log.Println("开始连接:", addr)
-		conn, err := this.connection(addr)
-		if err != nil {
-			log.Printf("%s:节点连接失败, 尝试重新连接!%+v\n", addr, err)
-			time.Sleep(time.Second * 1)
-			continue
-		}
-
-		this.conn[addr] = conn
-		log.Println(addr, "连接成功!")
+	//判断当前节点是否已经连接.
+	_, ok := this.conn[addr]
+	if ok {
 		return
 	}
+	log.Println("开始连接:", addr)
+	conn := this.connection(addr)
+
+	//建立授权.
+	if err := this.sendAuth(conn); err != nil {
+		log.Printf("err:%+v\n", err)
+		return
+	}
+	this.conn[addr] = conn
+	log.Println(addr, "连接成功!")
 }
 
-func (this *TcpService) connection(addr string) (conn net.Conn, err error) {
-	conn, err = net.Dial("tcp4", addr)
+//auth 发送授权信息.
+func (this *TcpService) sendAuth(conn net.Conn) error {
+	tokenBuf := []byte(ini.GetString("token"))
+	buf := packet.New(tokenBuf, tokenBuf, protocol.CONN_AUTH)
+	_, err := conn.Write(buf)
 	if err != nil {
-		return conn, err
+		return errors.New("授权信息发送失败")
 	}
-	return conn, nil
+
+	pkt, err := packet.Parse(conn)
+	if err != nil {
+		return errors.New("授权失败")
+	}
+
+	if string(pkt.Body) == "fail" {
+		return errors.New("授权信息验证失败")
+	}
+
+	logd.Make(logd.Level_INFO, logd.GetLogpath(), "授权成功")
+	return nil
+}
+
+//connection .
+func (this *TcpService) connection(addr string) net.Conn {
+	conn, err := net.Dial("tcp4", addr)
+	if err != nil {
+		log.Printf("%s:节点连接失败, 尝试重新连接!%+v\n", addr, err)
+		time.Sleep(time.Second * 1)
+		return this.connection(addr)
+	}
+	return conn
 }
 
 //SelectStoreNode 选择存储节点.

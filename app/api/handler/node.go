@@ -22,6 +22,7 @@ func (this *ApiService) connMaster() {
 	//连接初始化
 	if err := this.connInit(conn); err != nil {
 		logd.Make(logd.Level_WARNING, logd.GetLogpath(), err.Error())
+		time.Sleep(time.Second * 1)
 		this.connMaster()
 		return
 	}
