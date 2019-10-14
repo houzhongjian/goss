@@ -32,6 +32,11 @@ func (this *TcpService) Start(addr string) {
 //connStorageNode 连接存储节点.
 func (this *TcpService) connStorageNode(addr string) {
 	for {
+		//判断当前节点是否已经连接.
+		_, ok := this.conn[addr]
+		if ok {
+			return
+		}
 		log.Println("开始连接:", addr)
 		conn, err := this.connection(addr)
 		if err != nil {
