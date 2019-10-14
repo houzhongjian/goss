@@ -126,7 +126,6 @@ func (this *MasterService) parseNodeInfo(conn net.Conn, ip string) error {
 
 		//新存储节点上线,通知所有的api节点.
 		if node.Types == packet.NodeTypes_Storage {
-			log.Println("node.SourceIP:", node.SourceIP)
 			//通知api节点.
 			apiList := GetApiList()
 			for _, v := range apiList {
@@ -145,7 +144,6 @@ func (this *MasterService) parseNodeInfo(conn net.Conn, ip string) error {
 		if node.Types == packet.NodeTypes_Api {
 			//告知新上线的api节点多有的storage节点ip.
 			storageList := GetStorageList()
-			log.Printf("storageList:%+v len:%d\n", storageList, len(storageList))
 			for _, v := range storageList {
 				pktMsg := packet.New([]byte(v.SourceIP), lib.Hash(v.SourceIP), protocol.ADD_NODE)
 				_, err = this.Conn[node.SourceIP].Write(pktMsg)
