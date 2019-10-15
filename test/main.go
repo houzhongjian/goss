@@ -21,7 +21,7 @@ func main() {
 }
 
 func upload() {
-	filename := "./2.png"
+	filename := "./timg.jpeg"
 	b, err := ioutil.ReadFile(filename)
 	if err != nil {
 		log.Printf("%+v\n", err)
@@ -29,7 +29,7 @@ func upload() {
 	}
 
 	client := http.Client{}
-	fname := fmt.Sprintf("http://127.0.0.1/oss/%s", "3.png")
+	fname := fmt.Sprintf("http://127.0.0.1/oss/%s", "5.jpeg")
 	req, err := http.NewRequest("PUT", fname, bytes.NewBuffer(b))
 	if err != nil {
 		log.Printf("%+v\n", err)

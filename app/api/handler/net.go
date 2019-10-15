@@ -2,7 +2,6 @@ package handler
 
 import (
 	"errors"
-	"io"
 	"log"
 	"math/rand"
 	"net"
@@ -146,26 +145,44 @@ func (this *TcpService) Write(b []byte) (msg []byte, nodeip string, err error) {
 
 //Read tcp读取文件.
 func (this *TcpService) Read(nodeip, fHash string, bodylen int64) (boby []byte, err error) {
+	//建立连接.
 	conn, err := net.Dial("tcp4", nodeip)
 	if err != nil {
 		log.Printf("%+v\n", err)
 		return boby, err
 	}
 
-	pkt := packet.New(nil, []byte(fHash), protocol.READ_FILE)
-	_, err = conn.Write(pkt)
+	//连接授权.
+	token := ini.GetString("token")
+	buf := packet.New([]byte(token), lib.Hash(token), protocol.CONN_AUTH)
+	_, err = conn.Write(buf)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return boby, err
+	}
+	pkt, err := packet.Parse(conn)
 	if err != nil {
 		log.Printf("%+v\n", err)
 		return boby, err
 	}
 
-	for {
-		var buf = make([]byte, bodylen)
-		_, err = io.ReadFull(conn, buf)
-		if err != nil {
-			log.Printf("%+v\n", err)
-			return boby, err
-		}
-		return buf, nil
+	if string(pkt.Body) == "fail" {
+		return nil, errors.New("文件获取失败")
 	}
+
+	//读取文件.
+	buf = packet.New(nil, []byte(fHash), protocol.READ_FILE)
+	_, err = conn.Write(buf)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return boby, err
+	}
+
+	pkt, err = packet.Parse(conn)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return boby, err
+	}
+
+	return pkt.Body, nil
 }

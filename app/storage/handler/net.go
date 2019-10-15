@@ -108,6 +108,12 @@ func (this *StorageService) checkAuth(conn net.Conn, ip string) error {
 func (this *StorageService) handler(conn net.Conn, ip string) {
 	defer conn.Close()
 	for {
+		//判断是否已经授权.
+		if !this.Auth[ip] {
+			buf := packet.New([]byte("未授权"), lib.Hash("未授权"), protocol.MSG)
+			conn.Write(buf)
+			return
+		}
 		pkt, err := packet.Parse(conn)
 		if err != nil && err == io.EOF {
 			logd.Make(logd.Level_WARNING, logd.GetLogpath(), ip+"断开连接")
@@ -142,13 +148,21 @@ func (this *StorageService) handler(conn net.Conn, ip string) {
 				logd.Make(logd.Level_WARNING, logd.GetLogpath(), "读取文件失败:"+err.Error())
 				return
 			}
-			_, err = conn.Write(b)
+
+			//验证文件是否损坏.
+			if lib.FileHash(b) != pkt.Hash {
+				logd.Make(logd.Level_WARNING, logd.GetLogpath(), pkt.Hash+"文件已损坏")
+				return
+			}
+
+			buf := packet.New(b, []byte(pkt.Hash), protocol.SEND_FILE)
+			_, err = conn.Write(buf)
 			if err != nil && err == io.EOF {
 				logd.Make(logd.Level_WARNING, logd.GetLogpath(), "文件发送失败:"+err.Error())
 				return
 			}
 
-			logd.Make(logd.Level_INFO, logd.GetLogpath(), "文件发成功")
+			logd.Make(logd.Level_INFO, logd.GetLogpath(), "文件发送成功")
 		}
 	}
 }

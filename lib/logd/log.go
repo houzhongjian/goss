@@ -6,6 +6,7 @@ import (
 	"os"
 	"runtime"
 	"time"
+
 	"goss.io/goss/lib"
 	"goss.io/goss/lib/ini"
 )
@@ -20,6 +21,32 @@ const (
 	Level_ERROR            = "ERROR"
 )
 
+var logList = make(chan string, 4096)
+
+func init() {
+	log.Println("init")
+	go func() {
+		for {
+			select {
+			case logmsg := <-logList:
+				logFile := logFile()
+				f, err := os.OpenFile(logFile, os.O_CREATE|os.O_APPEND|os.O_RDONLY|os.O_WRONLY, 0777)
+				if err != nil {
+					log.Printf("%+v\n", err)
+					f.Close()
+					return
+				}
+
+				_, err = f.WriteString(logmsg)
+				if err != nil {
+					log.Printf("%+v\n", err)
+				}
+				f.Close()
+			}
+		}
+	}()
+}
+
 func Make(level LogLevel, logpath string, msg interface{}) {
 	makelog(level, logpath, msg)
 }
@@ -28,19 +55,8 @@ func makelog(level LogLevel, logpath string, msg interface{}) {
 	nodename := ini.GetString("node_name")
 	content := fmt.Sprintf("%s %s:[%s] %s [%v]\n", lib.Time(), nodename, level, logpath, msg)
 
-	logFile := logFile()
-	f, err := os.OpenFile(logFile, os.O_CREATE|os.O_APPEND|os.O_RDONLY|os.O_WRONLY, 0777)
-	if err != nil {
-		log.Printf("%+v\n", err)
-		f.Close()
-		return
-	}
 	println(content)
-	_, err = f.WriteString(content)
-	if err != nil {
-		log.Printf("%+v\n", err)
-	}
-	f.Close()
+	logList <- content
 }
 
 //getLogpath 获取产生日志的路径.
